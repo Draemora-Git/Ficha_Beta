@@ -1,0 +1,1744 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draemora 4.0 - Gerenciador Arcano</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&family=Quicksand:wght@300;400;600&family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style id="custom-theme-styles">
+        :root {
+            --gold: #d4af37;
+            --panel-bg: rgba(26, 26, 26, 0.9);
+            --text-color: #e0e0e0;
+            --accent-red: #8b0000;
+        }
+
+        body {
+            transition: background 0.5s ease, color 0.3s ease;
+            min-height: 100vh;
+        }
+
+        .draemora-stars {
+            background-color: #0a192f;
+            background-image: 
+                radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px),
+                radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 40px);
+            background-size: 550px 550px, 350px 350px, 250px 250px;
+            background-position: 0 0, 40px 60px, 130px 270px;
+        }
+
+        h1, h2, h3 { font-family: 'Cinzel', serif; color: var(--gold); }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-radius: 12px;
+        }
+
+        .nav-tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            font-family: 'Cinzel', serif;
+            font-weight: bold;
+        }
+
+        .nav-tab.active {
+            border-bottom-color: var(--gold);
+            color: var(--gold);
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid var(--gold);
+            text-align: center;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .input-field {
+            background: rgba(42, 42, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            width: 100%;
+        }
+
+        .star-active { color: var(--gold); text-shadow: 0 0 8px var(--gold); }
+        .star-inactive { color: rgba(255,255,255,0.1); }
+
+        .btn-action {
+            background: linear-gradient(135deg, var(--gold) 0%, #b8860b 100%);
+            color: black;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .btn-action:hover { transform: scale(1.05); }
+
+        .desc-text { font-size: 0.75rem; opacity: 0.8; line-height: 1.4; white-space: pre-line; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+    </style>
+</head>
+<body class="draemora-stars p-4 md:p-6" id="app-body">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- HEADER / PERFIS -->
+        <header class="panel p-4 mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <h1 class="text-3xl font-bold tracking-tighter">DRAEMORA <span class="text-sm align-top opacity-50">4.0</span></h1>
+                <div class="h-10 w-px bg-gray-700 hidden md:block"></div>
+                <div>
+                    <label class="text-[10px] uppercase text-gray-400 block mb-1">Perfil Ativo</label>
+                    <select id="profileSelector" class="input-field py-1 text-sm w-48" onchange="switchProfile(this.value)"></select>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="createNewProfile()" class="bg-green-700 hover:bg-green-600 px-4 py-2 rounded text-xs font-bold uppercase transition shadow-lg">Novo Herói</button>
+                
+                <button onclick="openDeleteModal()" class="bg-red-900 hover:bg-red-800 px-4 py-2 rounded text-xs font-bold uppercase transition shadow-lg">Apagar</button>
+            </div>
+        </header>
+
+        <!-- NAVEGAÇÃO -->
+        <nav class="flex gap-2 mb-6 border-b border-gray-800">
+            <div class="nav-tab active" id="tab-personagem" onclick="showTab('personagem')">Personagem</div>
+            <div class="nav-tab" id="tab-arsenal" onclick="showTab('arsenal')">Arsenal & Notas</div>
+            <div class="nav-tab" id="tab-personalizacao" onclick="showTab('personalizacao')">Personalização</div>
+        </nav>
+
+        <!-- CONTEÚDO: PERSONAGEM (NOVO LAYOUT 3 COLUNAS) -->
+        <div id="content-personagem" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- COLUNA ESQUERDA: Raça, Talentos, Máculas -->
+            <div class="space-y-6">
+                <section class="panel p-6">
+                    <h2 class="text-lg mb-4 text-blue-400 uppercase font-bold border-b border-blue-900 pb-2">Características de Raça</h2>
+                    <div id="race-features" class="space-y-4 max-h-[30vh] overflow-y-auto pr-2"></div>
+                </section>
+                
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-lg text-gold uppercase font-bold">Talentos <span id="talent-count" class="text-xs opacity-50 ml-1">0</span></h2>
+                        <button onclick="openModal('talent')" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Adicionar</button>
+                    </div>
+                    <div id="talent-list" class="space-y-3 max-h-[25vh] overflow-y-auto pr-2"></div>
+                </section>
+                
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-lg text-red-500 uppercase font-bold">Máculas <span id="macula-count" class="text-xs opacity-50 ml-1">0</span></h2>
+                        <button onclick="openModal('macula')" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Adicionar</button>
+                    </div>
+                    <div id="macula-list" class="space-y-3 max-h-[25vh] overflow-y-auto pr-2"></div>
+                </section>
+            </div>
+
+            <!-- COLUNA CENTRAL: Herói, Combate, Atributos, Perícias -->
+            <div class="space-y-6">
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-xl uppercase font-bold">Herói</h2>
+                        <div id="apex-stars" class="flex gap-1 text-xl cursor-pointer"></div>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="text" id="charName" class="input-field text-xl font-bold text-center" placeholder="Nome do Personagem" oninput="updateProfileName(this.value)">
+                        <div class="grid grid-cols-2 gap-2">
+                            <select id="charRace" class="input-field text-center font-bold" onchange="updateCharacter()"></select>
+                            <select id="charClass" class="input-field text-center font-bold" onchange="updateCharacter()"></select>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel p-6">
+                    <h2 class="text-lg mb-4 border-b border-gray-700 pb-2 text-center uppercase font-bold text-gray-300">Combate</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="stat-box relative border-red-500 bg-red-900 bg-opacity-20">
+                            <div class="text-[10px] opacity-80 uppercase font-bold text-red-400">Vida</div>
+                            <input type="text" id="stat-hp" class="w-full bg-transparent text-center text-3xl font-bold text-white my-1 outline-none focus:text-gold transition-colors" placeholder="0/0" onchange="saveData()">
+                        </div>
+                        <div class="stat-box border-blue-500 bg-blue-900 bg-opacity-20">
+                            <div class="text-[10px] opacity-80 uppercase font-bold text-blue-400">Defesa</div>
+                            <div id="stat-def" class="text-3xl font-bold text-white my-1">0</div>
+                        </div>
+                        <div class="stat-box border-gray-500">
+                            <div class="text-[10px] opacity-80 uppercase font-bold text-gray-300">Red. Física</div>
+                            <div id="stat-rf" class="text-3xl font-bold text-white my-1">0</div>
+                        </div>
+                        <div class="stat-box border-purple-500">
+                            <div class="text-[10px] opacity-80 uppercase font-bold text-purple-400">Red. Mágica</div>
+                            <div id="stat-rm" class="text-3xl font-bold text-white my-1">0</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel p-6">
+                    <h2 class="text-lg mb-4 border-b border-gray-700 pb-2 text-center uppercase font-bold text-gray-300">Atributos</h2>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-red-400">FOR</label>
+                            <input type="number" id="attr-for" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-green-400">DES</label>
+                            <input type="number" id="attr-des" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-orange-400">COR</label>
+                            <input type="number" id="attr-cor" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-blue-400">MEN</label>
+                            <input type="number" id="attr-men" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-purple-400">ALM</label>
+                            <input type="number" id="attr-alm" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                        <div class="text-center bg-black bg-opacity-30 p-2 rounded border border-gray-800">
+                            <label class="text-[10px] uppercase font-bold text-yellow-400">CAR</label>
+                            <input type="number" id="attr-car" class="input-field text-center font-bold text-lg mt-1" onchange="saveData()">
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-lg uppercase font-bold text-gray-300">Perícias</h2>
+                        <button onclick="addSkill()" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Adicionar</button>
+                    </div>
+                    <div id="skills-list" class="space-y-2 max-h-48 overflow-y-auto pr-2"></div>
+                </section>
+            </div>
+
+            <!-- COLUNA DIREITA: Classe, Ápice, Subclasse -->
+            <div class="space-y-6">
+                <section class="panel p-6">
+                    <h2 class="text-lg mb-4 text-gold uppercase font-bold border-b border-yellow-900 pb-2">Características de Classe</h2>
+                    <div id="class-features" class="space-y-4 max-h-[35vh] overflow-y-auto pr-2"></div>
+                </section>
+                
+                <section class="panel p-6">
+                    <h2 class="text-lg mb-4 text-purple-400 uppercase font-bold border-b border-purple-900 pb-2">Ápice de Classe</h2>
+                    <div id="class-apice" class="space-y-4 overflow-y-auto pr-2 mb-6"></div>
+
+                    <h2 class="text-lg mb-4 text-green-400 uppercase font-bold border-b border-green-900 pb-2">Subclasse</h2>
+                    <div class="space-y-2">
+                        <input type="text" id="charSubclass" class="input-field w-full text-center font-bold" placeholder="Digite sua Subclasse..." oninput="saveData()">
+                        <textarea id="charSubclassDesc" class="input-field w-full h-24 resize-none text-xs text-gray-300 leading-relaxed" placeholder="Descrição da sua Subclasse..." oninput="saveData()"></textarea>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- CONTEÚDO: ARSENAL, RUNAS & NOTAS -->
+        <div id="content-arsenal" class="tab-content hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="space-y-6">
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-xl uppercase"><i class="fa-solid fa-toolbox mr-2"></i> Arsenal</h2>
+                        <div class="flex gap-2">
+                            <button onclick="addArsenalItem('item')" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Novo Item</button>
+                            <button onclick="addArsenalItem('shield')" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Escudo</button>
+                            <button onclick="addArsenalItem('armor')" class="btn-action text-[10px] px-2 py-1 rounded uppercase">Armadura</button>
+                        </div>
+                    </div>
+                    <div id="arsenal-list" class="space-y-4 max-h-[400px] overflow-y-auto pr-2"></div>
+                </section>
+
+                <section class="panel p-6">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                        <h2 class="text-xl uppercase text-purple-400"><i class="fa-solid fa-gem mr-2"></i> Runas</h2>
+                        <button onclick="addRune()" class="btn-action text-xs px-3 py-1 rounded uppercase">Nova Runa</button>
+                    </div>
+                    <div id="runes-list" class="space-y-4 max-h-[300px] overflow-y-auto pr-2"></div>
+                </section>
+            </div>
+            
+            <section class="panel p-6 flex flex-col">
+                <h2 class="text-xl mb-4 border-b border-gray-700 pb-2 uppercase"><i class="fa-solid fa-book mr-2"></i> Anotações</h2>
+                <textarea id="charNotes" class="input-field h-[400px] resize-none p-4 leading-relaxed mb-6" placeholder="Escreva aqui a história do seu personagem, missões ou segredos..." oninput="saveData()"></textarea>
+                
+                <h2 class="text-xl mb-4 border-b border-gray-700 pb-2 uppercase"><i class="fa-solid fa-coins mr-2"></i> Carteira</h2>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="text-center">
+                        <label class="text-[10px] opacity-60 block mb-1 font-bold">DSB (Bronze)</label>
+                        <input type="number" id="coin-dsb" class="input-field text-center font-bold" placeholder="0" onchange="saveData()">
+                    </div>
+                    <div class="text-center">
+                        <label class="text-[10px] opacity-60 block mb-1 font-bold">DSP (Prata)</label>
+                        <input type="number" id="coin-dsp" class="input-field text-center font-bold" placeholder="0" onchange="saveData()">
+                    </div>
+                    <div class="text-center">
+                        <label class="text-[10px] opacity-60 block mb-1 font-bold">DSO (Ouro)</label>
+                        <input type="number" id="coin-dso" class="input-field text-center font-bold" placeholder="0" onchange="saveData()">
+                    </div>
+                    <div class="text-center">
+                        <label class="text-[10px] opacity-60 block mb-1 font-bold">DSD (Diamante)</label>
+                        <input type="number" id="coin-dsd" class="input-field text-center font-bold" placeholder="0" onchange="saveData()">
+                    </div>
+                </div>
+
+                <div class="mt-6 p-4 bg-black bg-opacity-30 rounded border border-gray-700 text-xs text-gray-300">
+                    <h3 class="font-bold text-gold mb-2 uppercase">Padrão Monetário</h3>
+                    <p class="mb-2">A Dracma existe em diferentes ligas de valor, o que facilita transações em diversas escalas, desde a compra de uma maçã até a negociação de artefatos mágicos. O câmbio entre as ligas é fixo e amplamente reconhecido:</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>1 Dracma de Ouro (D$O) = 10 Dracmas de Prata (D$P)</li>
+                        <li>1 Dracma de Prata (D$P) = 10 Dracmas de Bronze (D$B)</li>
+                        <li>1 Dracma de Diamante (D$D) = 100 Dracmas de Ouro (D$O)</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <!-- CONTEÚDO: PERSONALIZAÇÃO -->
+        <div id="content-personalizacao" class="tab-content hidden">
+            <div class="panel p-8 max-w-2xl mx-auto space-y-8">
+                <h2 class="text-2xl text-center border-b border-gold pb-4 uppercase">Customização Visual</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <label class="block mb-2 font-bold uppercase text-sm">Temas Padrão</label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button onclick="applyTheme('dark')" class="bg-zinc-900 border border-zinc-700 p-3 rounded text-left hover:border-gold">Dark (Padrão)</button>
+                            <button onclick="applyTheme('white')" class="bg-white text-black p-3 rounded text-left hover:border-gold">White (Claro)</button>
+                            <button onclick="applyTheme('draemora')" class="bg-blue-900 p-3 rounded text-left hover:border-gold border border-gold">Draemora Base</button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block mb-2 font-bold uppercase text-sm">Fonte da Alma</label>
+                        <select id="style-font" class="input-field" onchange="updateStyle('font', this.value)">
+                            <option value="'Quicksand', sans-serif">Quicksand (Moderna)</option>
+                            <option value="'Cinzel', serif">Cinzel (Épica)</option>
+                            <option value="'MedievalSharp', cursive">Medieval (Clássica)</option>
+                            <option value="'Roboto', sans-serif">Roboto (Limpa)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block font-bold uppercase text-sm">Cores Personalizadas</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-xs opacity-60">Fundo Principal</span>
+                            <div class="flex gap-2 items-center mt-1">
+                                <input type="color" id="style-bg" onchange="updateStyle('bg', this.value)" class="w-10 h-10 bg-transparent cursor-pointer border border-gray-600 rounded">
+                                <span class="text-xs uppercase font-mono" id="bg-hex">#000000</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-xs opacity-60">Cor dos Painéis</span>
+                            <div class="flex gap-2 items-center mt-1">
+                                <input type="color" id="style-panel" onchange="updateStyle('panel', this.value)" class="w-10 h-10 bg-transparent cursor-pointer border border-gray-600 rounded">
+                                <span class="text-xs uppercase font-mono" id="panel-hex">#1a1a1a</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-[10px] text-center opacity-40 italic mt-8 uppercase tracking-widest">As mudanças são salvas automaticamente em cada perfil.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA TALENTOS E MÁCULAS -->
+    <div id="selection-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="panel p-6 w-full max-w-lg max-h-[85vh] flex flex-col border border-gold relative">
+            <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                <h2 id="modal-title" class="text-xl font-bold uppercase text-gold">Selecione</h2>
+                <button onclick="closeModal()" class="text-red-500 hover:text-red-400 transition"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            <div id="modal-content" class="overflow-y-auto space-y-2 flex-grow pr-2"></div>
+        </div>
+    </div>
+
+    <!-- MODAL DE EXCLUSÃO DE PERSONAGEM -->
+    <div id="delete-modal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="panel p-8 w-full max-w-md border border-red-600 relative text-center">
+            <h2 class="text-2xl font-bold uppercase text-red-500 mb-4"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Tem Certeza?</h2>
+            <p class="mb-4 text-sm text-gray-300">Esta ação não pode ser desfeita. Para apagar este herói definitivamente, digite o nome exato dele abaixo:</p>
+            <p class="font-bold text-gold mb-4 text-lg bg-black bg-opacity-40 p-2 rounded" id="delete-char-name"></p>
+            <input type="text" id="delete-confirm-input" class="input-field w-full mb-2 text-center" placeholder="Digite o nome...">
+            <p id="delete-error" class="text-red-500 text-xs hidden mb-4">O nome digitado não confere.</p>
+            <div class="flex justify-center gap-4 mt-6">
+                <button onclick="closeDeleteModal()" class="bg-gray-700 hover:bg-gray-600 px-6 py-2 rounded text-xs font-bold uppercase transition">Cancelar</button>
+                <button onclick="confirmDelete()" class="bg-red-700 hover:bg-red-600 px-6 py-2 rounded text-xs font-bold uppercase transition shadow-lg shadow-red-900">Apagar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DADOS COMPLETA ATUALIZADA ---
+        const RAÇAS = {
+            "Astris": {
+                hp: "3d4+10", def: 8, rf: 4, rm: 4,
+                traits: [
+                    { name: "Contrato Dimensional (Ação Bônus)", desc: "Ao início do combate, firme um contrato com o véu (dura a cena):\n• Contrato com o Espaço: +2 em Reflexos e imunidade a terreno difícil.\n• Contrato com o Tempo: Pode repetir uma rolagem de ataque ou Resistência 2x/cena.\n• Contrato com a Matéria: Recebe +2 em Redução Física e +2 em Redução Mágica." },
+                    { name: "Domínio Fragmentado (Ação Bônus)", desc: "Pode manipular a estrutura local de uma área de até 5m. Durante 2 rodadas, criaturas dentro sofrem Desvantagem em testes de deslocamento ou ataque à distância." },
+                    { name: "Geometria Viva (Livre, 1x/cena)", desc: "Seu corpo é feito de linhas dimensionais. Efeitos:\n• Forma Euclidiana: ganha +3 em Defesa por 2 turnos.\n• Forma Não-Euclidiana: se torna translúcido e atravessa objetos até 3 metros." },
+                    { name: "Paradoxo do Eu", desc: "Ao sofrer dano fatal ou estresse extremo, uma versão alternativa sua (imprevisível) assume por 1 turno.\n• Passivo: 2x/cena receba vantagem em uma rolagem ao consultar o 'outro eu'." }
+                ],
+                talents: [
+                    { name: "Contrato do Horizonte", desc: "Ação Bônus 1x/cena. Efeitos:\n• Contratar a Luz: Dobra o alcance de uma magia e adiciona +2/ponto em Mente no dano.\n• Contratar a Sombra: Próximo ataque mágico ignora metade da RM e deixa o alvo cego até o fim do turno." },
+                    { name: "Arquitetura do Abismo", desc: "Ação Bônus 1x/cena. Efeitos:\n• Cria barreira geométrica 3x3m que bloqueia magia/rituais por 1 rodada.\n• Reordena terreno em 5m." },
+                    { name: "Trindade Inversa", desc: "No início da cena escolha sua faceta (Muda 1x/combate):\n• Passado: +5 vida temporária por ponto em Corpo (2r).\n• Presente: +2 Atq e Percepção (2r).\n• Futuro: +2 Mente e Alma (2r)." },
+                    { name: "Passo Dimensional", desc: "Ação bônus 3x/cena. Teletransporta a si e a um aliado até 9m em linha reta." },
+                    { name: "Mão da outra Dimensão", desc: "Ação Padrão 3x/cena. Abre uma fenda e invoca uma mão que causa 2d8 + 2/ponto Mente (Físico ou Mágico). Aumenta 1 dado de dano por ápice." }
+                ],
+                maculas: [
+                    { name: "Fratura Dimensional", desc: "Após usar habilidades dimensionais, fica fora de fase por 1 rodada (incapaz de ser curado)." },
+                    { name: "Claustrofobia Cósmica", desc: "A mente se recusa a confinamento. Em locais fechados ou imobilizado, sofre -5 em todos os testes de Mente." },
+                    { name: "Vozes de outra Dimensão", desc: "Ao focar ou se concentrar, escuta vozes confusas e sofre desvantagem no próximo teste." },
+                    { name: "Perfuração de Sofrimento", desc: "Ao sofrer dano Mágico ou Físico, perde 1 ponto de atributo por 2 rodadas (não acumulativo)." },
+                    { name: "Vulnerabilidade ao Eclipse", desc: "Sob eclipses ou escuridão total, sofre -4 em todos os testes até se afastar." }
+                ]
+            },
+            "Colosso": {
+                hp: "2d6+10", def: 9, rf: 7, rm: 7,
+                traits: [
+                    { name: "Núcleo Incompreensível", desc: "Não possui Alma, possui Núcleo (O atributo Alma passa a ser Núcleo). Imune a emoções, empatia, possessão ou manipulação espiritual. Não processa sentimentos abstratos." },
+                    { name: "Estrutura Energética", desc: "Usa Energia invés de Vida. Cura mágica afeta apenas 50%. Só recupera totalmente a Energia em Descanso Completo." },
+                    { name: "Absorção (Reação)", desc: "2x/cena. Contra magia ofensiva direta. Teste Res. Física. Sucesso = RM dobrada para a magia e cura 1d12 por ponto de Núcleo." },
+                    { name: "Imunidade Orgânica", desc: "Imune a doenças, venenos, paralisações orgânicas. Testes de Res. Física contra fadiga, enjoo ou sangramento são sucessos automáticos." },
+                    { name: "Presença Inabalável", desc: "Não pode ser movido contra vontade a menos que falhe em Corpo (D.A 12). Vantagem contra derrubada e empurrão." }
+                ],
+                talents: [
+                    { name: "Sobrecarga Controlada", desc: "Ação Bônus. Próximo ataque recebe +1d6 + Núcleo de dano. Role 1d6: com 1, sofre 1d4 de dano direto de recuo." },
+                    { name: "Revestimento Arcano", desc: "+2 de RM contra a primeira magia que o atingir em cada cena." },
+                    { name: "Autocorreção Estrutural", desc: "Restaura 3d12 + Núcleo de Energia adicional em descanso parcial (excesso vira Energia Temporária)." },
+                    { name: "Golpe de Compressão", desc: "Reação. Se ataque corpo a corpo superar Defesa do inimigo em 5+, arremessa-o a 3m (Teste de Reflexos/Resistência desvantajoso para não cair)." },
+                    { name: "Núcleo Harmônico", desc: "1x/cena, converte 1 penalidade que sofreria em +5 de dano mágico no próximo ataque." },
+                    { name: "Nova Programação", desc: "Em situações novas nunca vistas na cena, recebe +2 em uma perícia correspondente até o fim da cena." }
+                ],
+                maculas: [
+                    { name: "Instabilidade Energética", desc: "Ao usar habilidade de cena (talento racial/classe), role 1d6. Com 1 ou 2, recebe -2 em todos os testes até o fim da rodada." },
+                    { name: "Dreno Ineficiente", desc: "Cura mágica em você é ainda menos eficaz: só 25% do valor original." },
+                    { name: "Superaquecimento", desc: "Se sofrer mais de 10 de dano de uma vez, próximo teste tem Desvantagem, e perde Reações até fim da rodada seguinte." },
+                    { name: "Falhas de Integração", desc: "Nunca recebe Inspirações, bênçãos ou efeitos que aumentem moral ou vontade." },
+                    { name: "Reinício Forçado", desc: "A 0 Energia, apaga completamente. Só volta com descanso completo ou reparo especializado (Efeitos normais de reerguer aliado não funcionam)." }
+                ]
+            },
+            "Crônidas": {
+                hp: "3d6+9", def: 7, rf: 5, rm: 5,
+                traits: [
+                    { name: "Caminho Visto", desc: "Grupo ignora primeiro terreno difícil se seguir você. Vantagem em testes para evitar surpresa." },
+                    { name: "Aceleração Pessoal (Ação Bônus)", desc: "2x/cena. Empresta ação do futuro: ganha Ação Padrão adicional. Fica Lento na próxima rodada (apenas Mover/Bônus)." },
+                    { name: "Impor Eco de Dor (Reação)", desc: "2x/cena. Quando inimigo até 10m sofre dano, foça o eco. Início do próximo turno do inimigo, sofre 1d6 de dano direto para cada 10 de dano sofrido por ataque único." },
+                    { name: "Psicometria Temporal", desc: "Foca 1 minuto num objeto/local. Teste Mente (D.A. variável) para ver passado (quem segurou, uso, eventos)." },
+                    { name: "Visitante Onírico", desc: "Ao dormir, pode invadir sonhos de alvo conhecido para deixar mensagens ocultas no subconsciente." }
+                ],
+                talents: [
+                    { name: "Vislumbre de Aço", desc: "Pode usar o atributo Mente em vez de Destreza para calcular a Esquiva." },
+                    { name: "Fio do Destino (Reação/Bônus)", desc: "1x/cena. Força qualquer criatura (incluindo você) a rolar novamente qualquer teste e aceitar o segundo resultado." },
+                    { name: "Retorno Causal (Reação)", desc: "1x/combate. Quando inimigo erra ataque corpo a corpo contra você, ele sofre 2d8 + Força ou Destreza dele mesmo como dano direto." },
+                    { name: "Memória Residual Profunda", desc: "Ao usar Psicometria Temporal, pode fazer 1 pergunta específica e direta ao Mestre obtendo um detalhe oculto." },
+                    { name: "Passo Fora do Tempo", desc: "2x/cena. Reação ou Padrão. Torna-se intangível por 1 rodada, evitando ataques físicos e mágicos." }
+                ],
+                maculas: [
+                    { name: "Des sincronia", desc: "Percepção dividida. Sempre age por último ou penúltimo na iniciativa (não pode trocar de posição)." },
+                    { name: "Vertigem Temporal", desc: "No início do combate, Teste Mente (10) ou fica Atordoado na 1ª rodada pelas visões." },
+                    { name: "Eco Pessoal", desc: "Em falha crítica, eco do passado atrapalha. Concede Vantagem ao próximo ataque contra você." },
+                    { name: "Corpo Fraturado", desc: "Gasta 2 de Vida (dano direto) sempre que usar uma habilidade racial ativa." },
+                    { name: "Presença Anacrônica", desc: "Desvantagem em testes sociais com pessoas sem conhecimento mágico (sua presença é deslocada no tempo)." }
+                ]
+            },
+            "Dampiros": {
+                hp: "3d6+8", def: 9, rf: 5, rm: 3,
+                traits: [
+                    { name: "Prole de Nosferatu", desc: "Pode escolher Talentos/Máculas de Humano e Vampiro em alternativa aos seus convencionais (Já inclusos nas opções de escolha)." },
+                    { name: "Presença Altiva", desc: "Vantagem em testes de Intimidação/Persuasão baseados em medo ou respeito." },
+                    { name: "Velocidade Antinatural (Ação Bônus)", desc: "Dobra o movimento no turno. Imune a flanqueamento." },
+                    { name: "Vital é o Sangue (Ação Bônus)", desc: "1x/cena. Recupera 2d4+Corpo PV sem consumir sangue externo." },
+                    { name: "Natureza Sobrenatural", desc: "Ataques corpo a corpo ganham +7 no dano final OU +3 no teste de ataque." },
+                    { name: "Forma de Névoa (Reação)", desc: "1x/cena. Ao sofrer dano, dissolve em névoa, reduzindo o dano final pela metade." },
+                    { name: "Abraço das Sombras", desc: "Visão no Escuro total. Em penumbra/escuridão, +2 em Furtividade." }
+                ],
+                talents: [
+                    { name: "Dança das Lâminas", desc: "Se mover 3m antes do ataque, o primeiro ataque tem Vantagem." },
+                    { name: "Passo Espectral (Movimento)", desc: "Teleporte até 9m para sombras visíveis. Usos/dia = atributo Mente." },
+                    { name: "Conhecimento Enciclopédico", desc: "Considerado proficiente em qualquer perícia de Mente. Usos/dia = atributo Mente." },
+                    { name: "Vontade Inquebrável", desc: "Usa Mente no lugar de Alma contra efeitos de controle mental." },
+                    { name: "Sangue Alquímico (Ritual)", desc: "10 min, 1x/dia. Transmuta próprio sangue em veneno potente ou poção menor (cura 2d6)." }
+                ],
+                maculas: [
+                    { name: "Sombra do Pai", desc: "Desvantagem em resistências contra magias/habilidades de Vampiros puros." },
+                    { name: "Distância Emocional", desc: "Desvantagem em Intuição para perceber emoções sutis." },
+                    { name: "Vínculo com o Lar", desc: "Deve descansar 4h/semana no 'santuário' (caixão/cripta), senão não recupera PV." },
+                    { name: "Atração pelo Proibido", desc: "Teste Mente (10) para resistir a investigar itens/tomos amaldiçoados imediatamente." }
+                ]
+            },
+            "Dríades": {
+                hp: "2d8+7", def: 8, rf: 2, rm: 7,
+                traits: [
+                    { name: "Raiz-Vínculo (Obrigatório)", desc: "Descansa fincando raízes. Imóvel, cria aura: aliados até 3m curam 1d6 PV por 3 rodadas." },
+                    { name: "Controle Vegetal (Ação Bônus)", desc: "Fora de combate: livre. Em combate: 1x/cena, imobiliza/distrai em terreno vegetal (Desvantagem no alvo)." },
+                    { name: "Espírito da Floresta", desc: "Vantagem contra efeitos mentais/mágicos na natureza. Teste Mente (10) para pedir ajuda a espíritos." },
+                    { name: "Micélio Sensorial", desc: "Sente vida (número/tamanho/movimento) em raio de 10m através de obstáculos finos." },
+                    { name: "Sementes Passadas", desc: "Na criação, escolhe 1 característica hereditária adicional de raça reprodutível (com aval do mestre)." }
+                ],
+                talents: [
+                    { name: "Broto Curativo", desc: "Planta broto num aliado. 3x/cena (ação livre): ao sofrer dano, broto ativa curando 2d6." },
+                    { name: "Raízes Contensoras (Ação Bônus)", desc: "2x/combate. Raízes em 2m. Teste Corpo (12) ou preso por 1 rodada." },
+                    { name: "Névoa de Esporos (Ação Bônus)", desc: "1x/cena. Nuvem 3m. Inimigos ganham desvantagem de ataque/percepção (1 rodada)." },
+                    { name: "Lianas Protetoras (Ação Bônus)", desc: "1x/cena. Cipós envolvem aliado, dando +3 Defesa Física por 2 rodadas." },
+                    { name: "Pele de Casca (Ação Bônus)", desc: "1x/cena. Pele endurece, +2 R.F. por 2 rodadas." },
+                    { name: "Chicote de Trepadeira (Movimento)", desc: "Arma viva 3m. 1d10+For/Des de dano. Pode puxar ou derrubar." }
+                ],
+                maculas: [
+                    { name: "Vulnerabilidade ao Fogo", desc: "Dobro de dano de fogo e calor. Desvantagem exposta a ele." },
+                    { name: "Necessidade de Solo Fértil", desc: "Após 24h sem tocar solo/árvore, perde -4 geral até fazê-lo." },
+                    { name: "Corpo Lenhoso", desc: "Sofre +5 dano cortante e tem desvantagem contra cortes." },
+                    { name: "Sensibilidade a Árido", desc: "Em desertos/cavernas secas, -5 testes físicos e desvantagem no combate." },
+                    { name: "Empatia Natural", desc: "Não fere plantas ou criaturas naturais sem teste Mente (10)." },
+                    { name: "Raízes Pesadas", desc: "Movimento em combate restrito a 4m por turno sem gasto extra de esforço." }
+                ]
+            },
+            "Eclíptico": {
+                hp: "3d4+6", def: 9, rf: 6, rm: 6,
+                traits: [
+                    { name: "Centelha Dissonante (Ação Bônus)", desc: "2x/combate. Arma ganha +2d6 dano por 2 rodadas." },
+                    { name: "Salamandra Ardente", desc: "3x/cena. Dano +1d8 de fogo mágico (+2d8 se alvo em chamas). Passivo: +5 de R.A Fogo." },
+                    { name: "Fogo de Pentecostes", desc: "Manipula fogo menor sem sofrer dano. Pode apagá-lo para curar 2d8 Vida." },
+                    { name: "Escolha o Caminho", desc: "Escolha na criação:\n• Segredos Profanados: +2 Runas Elementais, +1 Ritual.\n• Arma Bem/Mal: Ação bônus invoca arma 3d6+12 dano fogo mágico." }
+                ],
+                talents: [
+                    { name: "Caminhante das Extremidades", desc: "Se tem Arma Sagrada do Bem e Mal, ataca com Mente ou Alma (o maior)." },
+                    { name: "Aura do Crepúsculo", desc: "1x/cena. Aura 5m (3 rodadas) reduz precisão inimiga em -2." },
+                    { name: "Voz do Infinito", desc: "+2 em testes de Diplomacia ou Intimidação." },
+                    { name: "Bênção e Maldição", desc: "(Requer Segredos Profanados) Vantagem em testes de conjuração/execução." },
+                    { name: "Reflexo do Caos", desc: "Ao sofrer Acerto Crítico, contra-ataca imediatamente com Vantagem." },
+                    { name: "Asas do falcão de fogo", desc: "2x/cena. Asas mágicas dobram movimento para voar." }
+                ],
+                maculas: [
+                    { name: "Instabilidade Existencial", desc: "-2 em Alma sob estresse extremo." },
+                    { name: "Rejeição Cósmica", desc: "Criaturas celestiais ou infernais veem você como aberração, atacando/rejeitando." },
+                    { name: "Fragilidade de Duas Naturezas", desc: "(Reação) Sofre +1d4 de dano extra sempre que receber magia celestial ou infernal." },
+                    { name: "Conflito de Energias", desc: "Usar magias e rituais na mesma cena causa -2 geral até descansar." },
+                    { name: "Tentação Interna", desc: "Sussurros dos polos. Teste Mente crítico para não ceder ao caos/ordem." },
+                    { name: "Rejeição Social", desc: "-2 em interações com humanos e mortais que o achem antinatural." }
+                ]
+            },
+            "Elfo Negro": {
+                hp: "5d4+8", def: 11, rf: 5, rm: 6,
+                traits: [
+                    { name: "Marca de Sangue", desc: "Sela Juramento c/ aliado (1 por vez). Escolhe Benefício e Preço.\n• Benefícios: Eco Letal (+2d12 dano após aliado), Promessa Guarda (recebe ataque), Pacto Carmesim (transfere vida), Vínculo Caça (Vant. 1º atq).\n• Preços: -8 Vida Máx, -2 Men/Alm, ou Marca Visível.\nQuebra=Dano direto (Vida Máx)." },
+                    { name: "Armamento Mágico (Ação Bônus)", desc: "Imbui arma com Mente ou Alma (+dano). Se Juramento ativo, ganha +1d6 extra." },
+                    { name: "Conhecimento Élfico", desc: "+1 Runa Elemental ou 1 Ritual. Vantagem em Sobrevivência à noite." }
+                ],
+                talents: [
+                    { name: "Mentor do Pacto", desc: "Compartilha bônus de perícia sua com aliado do juramento." },
+                    { name: "Língua de Elfo", desc: "+2 Persuasão/Manipulação. Comunica-se em dialetos antigos esquecidos." },
+                    { name: "Sombras Silenciosas", desc: "1x/cena. Move-se na escuridão por 1 rodada sem ser detectado." },
+                    { name: "Veneno Cultural (Movimento)", desc: "Aplica veneno: 1º ataque ganha +1d6 dano." },
+                    { name: "Olho do Traidor", desc: "1x/cena. Detecta se aliado esconde intenções contrárias a você." }
+                ],
+                maculas: [
+                    { name: "Maldito Pela Luz", desc: "Luz solar direta causa -5 em Mente e Alma." },
+                    { name: "Rancor Ancestral", desc: "Sofre -5 em sociais com Elfos de outras linhagens (visto como aberração)." },
+                    { name: "Vínculo Obsessivo", desc: "Se aliado pactuado ferido, sofre -5 geral até confrontar o agressor." },
+                    { name: "Eco da Promessa Quebrada", desc: "Romper pacto gera pesadelos: -10 Percepção no dia seguinte." },
+                    { name: "Sombra do Passado", desc: "Antigo pacto o assombra cobrado por NPCs ou pelo Mestre." }
+                ]
+            },
+            "Feral": {
+                hp: "3d6+12", def: 8, rf: 6, rm: 3,
+                traits: [
+                    { name: "Forma Compacta (Livre)", desc: "Estado base (pequeno): +2 Res, R.A.s e Defesa. Sofre só metade do dano de gelo." },
+                    { name: "Forma Feral (Cena)", desc: "1x/cena (4r): Triplica tamanho. +20 Vida Temp, Vant. For/Cor/Des, atq desarmado 3d8+For. Perde bônus e armadura da Forma Compacta (mantém resist. a gelo)." },
+                    { name: "Sanidade da Montanha", desc: "Mantém disciplina e raciocínio mesmo na forma colossal." },
+                    { name: "Unidos Pelo Frio", desc: "A 3m de outro Feral: Vantagem em Resistir Influência e +2 geral." },
+                    { name: "Quebra Gelo", desc: "Sem penalidade de movimento em neve ou gelo denso." }
+                ],
+                talents: [
+                    { name: "Braços da Montanha", desc: "Escala sem teste. Pode mover/escalar e atacar no mesmo turno." },
+                    { name: "Rugido das Neves", desc: "1x/cena. Inimigos a 5m testam Mente (12) ou -2 em ataques (1 rodada)." },
+                    { name: "Visão Nevada", desc: "Vantagem em Furtividade/Percepção em áreas de neve/gelo." },
+                    { name: "Investida Fria", desc: "Na forma gigante, correr 6m reto e atacar causa +2d6 dano." },
+                    { name: "Ira da Montanha", desc: "Abaixo de 50% Vida: Ira (2r) com +1d10 dano físico, mas -2 Def/R.A." },
+                    { name: "Avalanche", desc: "1x/cena (Padrão). Bate no chão; inimigos 2m testam Corpo (10+Corpo) ou Atordoados (1r)." }
+                ],
+                maculas: [
+                    { name: "Vulnerabilidade a Fogo", desc: "Altamente inflamável. Sofre +50% dano de fogo." },
+                    { name: "Pesado", desc: "Na forma gigante: -2 Destreza e incapaz de usar Esquiva." },
+                    { name: "Frenesi", desc: "Abaixo de 10 Vida: Teste Mente (11) ou ataca alvo + próximo até ser contido." },
+                    { name: "Dependente do Frio", desc: "Climas quentes: -2 Resistências, curas reduzidas à metade." },
+                    { name: "Lentidão", desc: "Age por último se falhar Reflexos (10)." },
+                    { name: "Não é Problema Meu", desc: "-2 sociais (negociação, empatia) em culturas urbanas." }
+                ]
+            },
+            "Humano": {
+                hp: "2d10+8", def: 9, rf: 6, rm: 5,
+                traits: [
+                    { name: "Ímpeto Humano", desc: "Possui ptos de Ímpeto = Alma (mín 1). Gasta 1 para Vantagem em qualquer teste. Restaura no descanso." },
+                    { name: "Aprendizado Rápido", desc: "1x/cena. Realiza teste com perícia não treinada aplicando bônus de +1." },
+                    { name: "Não Caia Ainda! (Reação)", desc: "1x/cena. Aliado a 5m caindo a 0 PV fica com 1 PV invés disso." },
+                    { name: "No Limite da Força", desc: "Abaixo de 50% Vida, pts de Ímpeto dão Vantagem e +2 no resultado final." },
+                    { name: "Laços que Unem", desc: "Para cada aliado a 3m, ganha +1 Resistência (Alma/Corpo). Máx +3." },
+                    { name: "Ferramenta Certa", desc: "Considerado proficiente c/ qualquer arma/ferramenta (sem penalidades de uso)." }
+                ],
+                talents: [
+                    { name: "Técnica Improvisada", desc: "1x/cena. Propõe usar um Atributo diferente para um teste com lógica, se o Mestre aprovar." },
+                    { name: "Liderança Inspiradora (Ação)", desc: "Aliado ganha Vida Temp = 1d8 + Carisma." },
+                    { name: "Conhecimento Universal", desc: "Vantagem em Magia/Ritual se D.A. > 10." },
+                    { name: "Especialista Dedicado", desc: "Eleva perícia conhecida de +1 para +3." },
+                    { name: "Aprendizado Acelerado", desc: "Toda vez que cumpre Ápice de classe, aprende nova perícia." },
+                    { name: "Adaptável", desc: "Ganha +2 num atributo a escolha até o fim da cena (apenas para testes)." }
+                ],
+                maculas: [
+                    { name: "Ciclo de Dúvida", desc: "Após Falha Crítica, Desvantagem em testes daquela perícia até obter Sucesso." },
+                    { name: "Desconfiado", desc: "-2 sociais com desconhecidos/novas alianças." },
+                    { name: "Ambição Desmedida", desc: "Teste Alma (10) para não buscar obsessivamente fontes de poder/proibidas." },
+                    { name: "Coração Mortal", desc: "Desvantagem em resistir magias que controlam emoções (Fúria, Medo)." },
+                    { name: "Medroso", desc: "-3 mental sob terror extremo." },
+                    { name: "Corpo Frágil", desc: "Recebe +2 dano de todas as fontes físicas." }
+                ]
+            },
+            "Licantropo": {
+                hp: "4d6+10", def: 10, rf: 6, rm: 0,
+                traits: [
+                    { name: "Licantropia Ancestral", desc: "Linhagem aleatória 1d4: Lobo, Touro, Urso, Javali." },
+                    { name: "Forma Ancestral (Ação Padrão)", desc: "2x/combate. Híbrido.\n• Lobo: +2 For/Cor, +1d6 dano\n• Minotauro: +4 For, +1d8, Empurra alvos\n• Urso: Vant. For/Cor, Reduz Dano Fis=Corpo\n• Javali: +2 Cor, Vant. Res Fis, avança e ataca." },
+                    { name: "Instinto Bestial", desc: "No híbrido: 1ª ação sempre ofensiva. Falha em testes sociais. Risco de atacar aliados na fúria." },
+                    { name: "Forma Animal (Ação Padrão)", desc: "Besta Total.\n• Lobo: Movimento extra\n• Touro: Derruba\n• Urso: Intimidação\n• Javali: Dobro move." },
+                    { name: "Lua Cheia", desc: "4x/combate, ação livre para transformar. Ao fim, testa Controle ou sofre consequências." }
+                ],
+                talents: [
+                    { name: "Fera Dominante", desc: "No Híbrido: Marca 1 inimigo (+1d6 dano, Vantagem para agarrar/derrubar)." },
+                    { name: "Caçador de Sangue", desc: "Ataque físico em alvo ferido cura Vida = seu Corpo (1x/rodada)." },
+                    { name: "Olhos da Fera", desc: "Ignora escuridão leve e enxerga rastros de feridos." },
+                    { name: "Rugido Primordial", desc: "1x/cena. Inimigos testam Alma (7+Corpo) ou ficam amedrontados 1r." },
+                    { name: "Transformação Ágil", desc: "Transforma sem custo de ação." },
+                    { name: "Passos do Predador", desc: "Furtivo sem perda de move. Primeiro ataque saindo do furtivo dá +1d6 dano." }
+                ],
+                maculas: [
+                    { name: "Dor da Metamorfose", desc: "Sempre que assume Híbrido sofre dano direto = próprio Corpo." },
+                    { name: "Instinto Predatório", desc: "Teste Mente para não priorizar atacar fracos/feridos." },
+                    { name: "Fera à Flor da Pele", desc: "Sob crítico ou <50% PV, teste Alma: falha força transformação." },
+                    { name: "Sangue das Feras", desc: "-2 sociais com humanos." },
+                    { name: "Vulnerabilidade Espiritual", desc: "-2 resistências contra magias antifera/espíritos." },
+                    { name: "Corpo Marcado", desc: "Prata/efeitos antifera causam dano extra = Alma do oponente." }
+                ]
+            },
+            "Meio-Celestial": {
+                hp: "3d6+6", def: 10, rf: 3, rm: 5,
+                traits: [
+                    { name: "Herança Celestial", desc: "Filho de divindade. Bênçãos do próprio panteão recebem Vantagem." },
+                    { name: "Voz Dos Domínios", desc: "1x/cena invoca Sussurro. Rola 1d6: Par = Vant. em Mente/Alma. Ímpar = Intervenção do mestre." },
+                    { name: "O Primeiro Julgamento", desc: "1x/combate. Se alvo de magia, se passar na Resistência, reflete 50% dano ao conjurador." },
+                    { name: "Coração Intocável", desc: "Imune a detecção de intenções, leitura mental e controle de emoções." },
+                    { name: "Sangue Sagrado", desc: "Poupar inimigo chave gera 'Inspiração Sagrada' (Gasta ação para dar 1d8 em teste de aliado)." }
+                ],
+                talents: [
+                    { name: "Força Transcendental", desc: "+2 Força ou Corpo em testes físicos/atléticos (2 rodadas)." },
+                    { name: "Visão Sagrada", desc: "Enxerga além do véu invisível e mágico até 9m." },
+                    { name: "Vontade Inquebrável", desc: "+2 resistências de controle mental e medo (2x/cena)." },
+                    { name: "Guia Luminoso", desc: "1x/cena, concede a aliado +2 em teste Alma ou Mente." },
+                    { name: "Afinidade com Magia", desc: "Ganha +1 Runa Elemental. Conjurações contra você tem desvantagem." },
+                    { name: "Lâmina de Luz", desc: "1x/cena. Invoca arma 1d10+6 mágico (ignora 4 R.A.). Ataca com Mente+Luta." },
+                    { name: "Presença Inspiradora", desc: "Aliados a 5m recebem +1 Alma." },
+                    { name: "Vínculo Eterno (Cena)", desc: "Ambos curam +2d6 (1 rodada)." }
+                ],
+                maculas: [
+                    { name: "Deslocado", desc: "-2 sociais e desvantagem com mortais que o acham alienígena." },
+                    { name: "Exaustão Divina", desc: "Uso intenso de magias força Teste de Corpo contra exaustão." },
+                    { name: "Ligação de Pai e Mãe", desc: "Totalmente incapaz de acessar rituais infernais." },
+                    { name: "Presença Arrebatadora", desc: "Desvantagem social para liderar/acalmar grupos (intimida demais)." },
+                    { name: "Fragilidade Humana", desc: "Recebe +5 dano direto de fontes não mágicas/venenos." },
+                    { name: "Sombra do Divino", desc: "Profanos/Infernais te detectam a 15m (Vantagem contra você se te pegam)." },
+                    { name: "Rejeição Celestial", desc: "Desvantagem Mente para resistir estresse (sonhos julgadores)." },
+                    { name: "Cicatrizes Sagradas", desc: "Ataques de rituais mágicos inimigos te dão +5 dano." }
+                ]
+            },
+            "Meio-Demônio": {
+                hp: "2d6+10", def: 8, rf: 6, rm: 4,
+                traits: [
+                    { name: "Maldito Seja", desc: "Criação profana. Sua existência é escárnio." },
+                    { name: "Meu Orgulho", desc: "1x/cena. Forma Demoníaca: +9 Vida Temp, Asas (voa 18m), Vant. Intimidação." },
+                    { name: "Herdeiro", desc: "Marcado de nascença: Possui 2 rituais gravados na carne." },
+                    { name: "Voz da Razão", desc: "1x/sessão. Obedece à voz do demônio interior para receber bônus narrativo do mestre." },
+                    { name: "Não foi escolha sua", desc: "2x/cena. Sofre 5 dano puro para transformar uma falha (por até 2 pt) em Sucesso." }
+                ],
+                talents: [
+                    { name: "Sangue Impaciente", desc: "Em combate, +3m deslocamento permanente. Ganha Ação Mov. extra (2r)." },
+                    { name: "Violência Ressonante", desc: "Ataque causa 5 dano base adicional. Crítico causa +1d12 extra." },
+                    { name: "Vínculo Impuro", desc: "Vantagem para negociar, enganar ou intimidar Demônios." },
+                    { name: "Pulso Maldito", desc: "1x/cena, área de magia/ritual aumenta em 6m." },
+                    { name: "Mais Fissuras", desc: "Em contato demoníaco extremo, Mestre dá 1 ritual extra." },
+                    { name: "Maldição", desc: "1x/cena. Após dano mágico, alvo testa Res Influência (10+Alma). Falha = -1 geral, s/ Vantagem. Se morrer = Cura." }
+                ],
+                maculas: [
+                    { name: "Sede de Poder", desc: "Teste Alma (9) ou cede a pactos oferecidos de origem profana." },
+                    { name: "Vulnerabilidade à Graça", desc: "+5 dano contra armas/magias divinas." },
+                    { name: "Olhar Desconfiado", desc: "Primeira interação com NPC começa com Desvantagem." },
+                    { name: "Fissuras Visíveis", desc: "Mutações corporais marcadas pelo uso profano." },
+                    { name: "Chamado do Abismo", desc: "-2 para resistir impulsos em ambientes infernais." },
+                    { name: "Instabilidade", desc: "Falhas em rituais são sempre perigosas/aleatórias." }
+                ]
+            },
+            "Mortalhas": {
+                hp: "3d8+5", def: 9, rf: 8, rm: 5,
+                traits: [
+                    { name: "Mão do Demônio", desc: "Existência ligada a cobrança de dívidas/maldição. Mestre pune/direciona desvios." },
+                    { name: "Forma Diurna", desc: "De dia é Abutre (voa, ataca 2d8+For, s/ magia). Marca alvo para +2d10 do próx dano. A Noite vira Mortalha (humanoide envolto em pano)." },
+                    { name: "Ossuário (Ação Bônus)", desc: "Cria 1x/cena: Arma de osso 2d8 ou Reforço (Aumenta Def/R.A igual ao Corpo)." },
+                    { name: "Chamado do Credor", desc: "Compelido a falar verdades enigmáticas da sua missão se questionado." },
+                    { name: "Dívida Atada", desc: "1x/cena. Revela dívida oculta de um alvo ganhando +2 testes contra ele." }
+                ],
+                talents: [
+                    { name: "Golpe da Dívida Impagável", desc: "Ataque contra alvos pactuados/amaldiçoados causa +1d8 dano." },
+                    { name: "Controle sobre a Maldição", desc: "Em locais sem sol, pode assumir a forma Mortalha de dia." },
+                    { name: "Garras de Execução", desc: "No Abutre, 1d8+For e sangra 1d4 (Teste Corpo para evitar)." },
+                    { name: "Correntes Invisíveis", desc: "1x/cena. Alvo (5m) sofre -1 contra você. Fugir gera 1d6 de dano." },
+                    { name: "Reforçar o Pacto", desc: "1x/cena. Vantagem em intimidar seres que temem forças do além." },
+                    { name: "Rastro Espiritual", desc: "Rastreia mentiras e quebra mágica além de ilusões." }
+                ],
+                maculas: [
+                    { name: "Fobia Solar", desc: "Mesmo como abutre, sofre -4 Mente e Resistências no sol direto." },
+                    { name: "Não é bem vindo", desc: "-5 social e não entra em locais sagrados protegidos." },
+                    { name: "Fragmentos Vida Passada", desc: "Role 1d6 na tensão. Se 1 = memórias distraem, -2 próx teste." },
+                    { name: "Voz da Morte", desc: "Voz sobreposta gera aversão e medo (reação de NPCs)." },
+                    { name: "Contrato Infame", desc: "Entidade ou criador intervém e manipula em momentos críticos." },
+                    { name: "Rachaduras do Véu", desc: "Magias de cura são apenas 50% eficazes em você." }
+                ]
+            },
+            "Vampiros": {
+                hp: "3d6+8", def: 10, rf: 7, rm: 4,
+                traits: [
+                    { name: "Beijo do Predador", desc: "3x/cena. Ao acertar ataque físico, suga sangue e recupera 3d10 PV." },
+                    { name: "Potência Sanguínea", desc: "1x/turno. Invoca poder para ter Vantagem em teste For, Des ou Cor." },
+                    { name: "Olhar Dominador (Ação Bônus)", desc: "Alvo (9m) testa Res Inf. (7+Car) ou sofre Medo ou Charme por 1 rodada." },
+                    { name: "Sede de Sangue", desc: "Deve beber sangue (Mácula Obrigatória base). Se falhar = -2 geral." },
+                    { name: "Forma de Névoa (Reação)", desc: "Ao receber atq, dissolve. Ataque erra, move 3m s/ terreno. CD=3 rodadas." },
+                    { name: "Vigor Mortífero (Ação Bônus)", desc: "Dura 1 rodada: +1d10 dano físico corpo a corpo e Vant. Atletismo bruto." }
+                ],
+                talents: [
+                    { name: "Charme Vampírico", desc: "+2 Enganação e Persuasão." },
+                    { name: "Regeneração Sanguínea", desc: "Ataque corpo a corpo cura 1d4. Crítico cura 1d12." },
+                    { name: "Transformação em Névoa", desc: "1x/cena. Vira névoa, inimigos com desvantagem pra acertar e você ganha +2 Furtividade." },
+                    { name: "Velocidade Sobrenatural", desc: "+2 Reflexos/Destreza no combate direto." },
+                    { name: "Imortalidade Sob o Véu", desc: "Sobrevive morte com Teste Corpo (CD 7+2/uso), voltando com 1d12." },
+                    { name: "Força Devastadora", desc: "+1d6 dano físico corpo a corpo." },
+                    { name: "Obra Sobrenatural", desc: "Vantagem conjurando Runas de Sangue." }
+                ],
+                maculas: [
+                    { name: "Sede de Sangue (Automática)", desc: "Se não beber sangue causa -2 geral até consumir." },
+                    { name: "Fraqueza à Luz Solar", desc: "Sol direto causa 1d6 dano/r e desvantagem geral." },
+                    { name: "Vulnerável a Prata", desc: "+10 dano contra Prata." },
+                    { name: "Fome incontrolável", desc: "Estresse exige teste de Mente, ou ataca amigo mais próximo." },
+                    { name: "Controle Ancestral", desc: "Vampiros anciões controlam você em teste resistido." },
+                    { name: "Alvo de Caçadores", desc: "Caçadores vigiam suas viagens." },
+                    { name: "Alergia ao Alho", desc: "Alho ou prata perto dão -2 geral." },
+                    { name: "Sombras do Passado", desc: "Penalidade na Mente sob pressão de vida centenária." }
+                ]
+            },
+            "Zal'Kha": {
+                hp: "2d8+6", def: 11, rf: 5, rm: 6,
+                traits: [
+                    { name: "Paranóia", desc: "Fora de combate, assume forma do alvo usando um pertence pessoal. Disfarce 100% perfeito em aparência/voz se não agir de forma suspeita." },
+                    { name: "Adaptabilidade (Ação Bônus)", desc: "Molda corpo (garras, etc). Se 1º ataque na rodada acertar, realiza atq extra (1d8+Cor, For ou Des)." },
+                    { name: "Intruso", desc: "Furtividade/Enganação em meio a pessoas têm Dificuldade reduzida. Entra onde não devia facilmente." },
+                    { name: "Gás Tóxico (Ação Padrão)", desc: "1x/cena. Nuvem asfixia não-resistentes. Resistentes sofrem 5 dano contínuo. Dura = atributo Corpo." }
+                ],
+                talents: [
+                    { name: "Identidade Descartável", desc: "Muda para segundo disfarce instantâneo (vítima foi 'embora')." },
+                    { name: "Veneno (Ação Bônus)", desc: "Arma infectada (1/3r). Alvo testa R.F. (15) ou sofre desvant. For/Cor por 3r." },
+                    { name: "Fome de Poder", desc: "Engole item mágico menor, destruindo-o para absorver seu buff temp." },
+                    { name: "Regeneração Reptiliana", desc: "Se PV < 50%, cura 2d10 em 2 rodadas. Restaura membros em 1 dia." }
+                ],
+                maculas: [
+                    { name: "Vulnerabilidade ao Fogo", desc: "Sofre o dobro (200%) de dano de fogo e calor." },
+                    { name: "Metabolismo Acelerado", desc: "Come dobro de humanos. 1 dia sem comida = desv. For/Cor." },
+                    { name: "Rejeição Instintiva", desc: "Animais o odeiam/atacam, sofrendo desvantagem com animais." },
+                    { name: "Identidade Fragmentada", desc: "Disfarce >24h exige teste Alma (10). Falha = absorve medo do alvo." }
+                ]
+            }
+        };
+
+        const CLASSES = {
+            "Aniquilador": { 
+                hp: 10, rf: 7, rm: 2, maestria: 6, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano extra de 6 (Escala com Ápice) Fixo por fonte." },
+                    { name: "Zona de Duelo", desc: "Marca área curta (3r). 1º a entrar concede a você: +3 Def/R.A/Atq, soma For/Des em Retrucar, Vant. Res. Influência. Crítico renova." }, 
+                    { name: "Letalidade", desc: "1x/cena: Resultados iguais nos dados de ataque (ex 4,4) contam como Acerto Crítico automático." },
+                    { name: "Corte da Vitalidade", desc: "Qualquer ataque causa +5% da Vida Máx do alvo em dano." },
+                    { name: "Destruidor de Gigantes", desc: "Crítico em alvo com >50% Vida dá +1 Dado extra de Dano." }
+                ],
+                apice: { name: "Inevitável", desc: "Desafio: Derrotar alvo super resistente ou sobreviver cena extrema.\n\nUso (1x/combate): Escolha alvo, foca tudo: Ataque ignora 100% da Defesa dele e causa +5% Vida Máx de dano." }
+            },
+            "Apostador": { 
+                hp: 7, rf: 7, rm: 7, maestria: 2, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano extra de 2 (Escala) Fixo por fonte." },
+                    { name: "Trinca da Sorte! (Ação Bônus)", desc: "Rola 3d8:\n1s=Nada\n2s=Ataca 2 alvos\n3s=+4 CAR(2r)\n4s=Cura 4d4+4\n5s=+5 Atq/Dano e Cura 5\n6s=+3d6+6 Dano\n7s=Crítico\n8s=+8 Res(1r)" },
+                    { name: "Dados Viciados (Livre)", desc: "3x/cena: +/- 1 no d8." },
+                    { name: "Bet (Ação Bônus)", desc: "3x/cena. Canta trinca e tenta bater. Se der = Substitui atributos por CAR." },
+                    { name: "Tá Pagando!", desc: "Se cantar e acertar, soma valor (ex 3,3,3=9) ao dano." },
+                    { name: "Horário Bugado", desc: "3x/combate: Rola trinca qqr pra Agir de Novo." },
+                    { name: "100% No Primeiro Depósito", desc: "1x/sessão o primeiro item usado não consome." }
+                ],
+                apice: { name: "All in!", desc: "Desafio: Vencer improbabilidade absurda, enganar entidades cósmicas.\n\nUso: Em jogada final, gasta 2 Vida por rolagem de 3d8 até vir trinca. Efeitos imediatos. Se morrer = Fica em 1 PV." }
+            },
+            "Artesão": { 
+                hp: 8, rf: 6, rm: 7, maestria: 2, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Aprimoramentos de 2 (Escala)." },
+                    { name: "Oficina de Bolso", desc: "Abre portal de bolso para oficina c/ itens (em descansos)." },
+                    { name: "Aprimorar", desc: "(D.A 10). Armas = +10 Dano/Função. Escudo/Arma = +4 Defesa. Item = +Eficácia (dura até prox combate)." },
+                    { name: "Construção Rúnica", desc: "Funde runa no item. +1d8 dano elemento ou +5 resistência (1 Runa/item)." },
+                    { name: "Profissional", desc: "Vantagem no ofício de Tecnomagia. Começa +2 Dracmas Ouro." }
+                ],
+                apice: { name: "Projeto Único", desc: "Desafio: Criação decisiva narrativa ou usar matéria rara.\n\nUso: Forja item mágico PERMANENTE único aprovado pelo mestre." }
+            },
+            "Atirador": { 
+                hp: 6, rf: 3, rm: 3, maestria: 4, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano Físico à Distância +4 (Escala)." },
+                    { name: "Olhos de Águia", desc: "1x/cena. Efeito narrativo drástico: desarmar, pânico." },
+                    { name: "Disparo Certeiro", desc: "Vantagem a +10m de distância (antecipa alvo)." },
+                    { name: "Camuflagem Natural", desc: "Vantagem Furtividade para se esconder." },
+                    { name: "Foco Implacável", desc: "Gasta 1 turno pra no próximo tiro ignorar penalidades e dar +3d4 Dano." }
+                ],
+                apice: { name: "Disparo Lendário", desc: "Desafio: Eliminar alvo crítico ou alterar cena.\n\nUso: 1x/sessão. O tiro GARANTE dano máximo dos dados." }
+            },
+            "Berserker": { 
+                hp: 15, rf: 2, rm: 0, maestria: 5, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano extra de +5 (Escala)." },
+                    { name: "Em Fúria! (Ação Livre)", desc: "3 Rodadas. +3 em testes For/Cor. Fim: Teste Mente (10) ou ataca qualquer um." },
+                    { name: "Agressão incontrolável", desc: "Crítico gera +1 Ataque extra grátis." },
+                    { name: "Imortal em Combate", desc: "Ao zerar Vida: Teste Corpo (10). Se ok, revive com 4d8+Cor Vida Temp." },
+                    { name: "Corpo de Aço", desc: "Sem armadura = Soma Corpo nas Def/RAs. Em fúria = vira Vida Temp." }
+                ],
+                apice: { name: "Incontrolável", desc: "Desafio: Luta quase fatal ou derrote líder formidável.\n\nUso: 2x/cena. Fica Imune a Medo, Paralisação e Confusão na Fúria." }
+            },
+            "Bruxo": { 
+                hp: 9, rf: 7, rm: 9, maestria: 6, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano Fixo +6 (Escala)." },
+                    { name: "Pacto", desc: "Sela acordo com Demônio ou Exilado. Recebe 3 rituais passivos na mente." },
+                    { name: "Bruxaria", desc: "Vantagem Mente/Ocultismo contra criaturas estranhas p/ achar fraquezas." },
+                    { name: "Feitiços de ataque (Ação Bônus)", desc: "Ao atacar corpo: Explosão (2d8), Impulso (3m), ou Desarma (se atq>5)." },
+                    { name: "Feitiços de defesa (Reação)", desc: "Ao receber ataque: Escudo (+Def Men+Des), Desorientação (-Atq=Men), Punitivo (Reflete Falha)." }
+                ],
+                apice: { name: "O Receptáculo", desc: "Desafio: Estudo paranormal e captura épica.\n\nUso: Cena. Vira receptáculo: 2min Voo, 3d6 Mágico em volta e Força Medo na galera." }
+            },
+            "Caçador": { 
+                hp: 9, rf: 5, rm: 5, maestria: 4, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano extra +4 (Escala)." },
+                    { name: "Estudo da Presa", desc: "Reúne 3 infos do alvo = Acha Ponto Fraco. Ganha +1d8 Atq/Dano." },
+                    { name: "Preparo", desc: "Arrumar armadilhas antes de lutar dá +5 Defesa (primeiras 2r)." },
+                    { name: "Sangue Frio", desc: "Ameaça mortal dá +2 Mente em testes (3r), e Res com Mente." },
+                    { name: "Execução Precisa (Ação Bônus)", desc: "1x/rodada vs alvo com fraqueza. +1d10 dano e ignora 2 R.A/Defesa." }
+                ],
+                apice: { name: "Não Existe Fuga!", desc: "Desafio: Abater a ameaça principal.\n\nUso: Ao achar fraqueza = +4 fixo em TODAS as fontes de dano. Pilha item extra." }
+            },
+            "Exorcista": { 
+                hp: 9, rf: 3, rm: 5, maestria: 3, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano de Exorcismo +3 (Escala)." },
+                    { name: "Arsenal Espiritual (Ação bônus)", desc: "2x/cena. Consagra item contra demônios.\nLâmina: +10 dano e vant Atq. Laço: zera move e bloqueia TP. Selo: 2d8 dano+2m recuo." },
+                    { name: "Barganha (Reação)", desc: "2x/cena. Absorve a maldição/possessão do aliado, ganha Mancha e penalidade no fim da cena." },
+                    { name: "Exorcismo", desc: "Teste ocultismo = expulsa demônio causando 3d6 puro." }
+                ],
+                apice: { name: "Eu te Condeno!", desc: "Desafio: Banimento de nível alto.\n\nUso: 1x/combate. Marca lorde. Alvo: Desv, Dano=10% Vida, Banimento Perm." }
+            },
+            "Feiticeiro": { 
+                hp: 7, rf: 4, rm: 4, maestria: 6, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano Elemental +6 (Escala)." },
+                    { name: "Manipulador Elemental", desc: "Escolhe Fogo, Terra, Vento, Água. Reduz dano sofrido desse elem. em 50%." },
+                    { name: "Derrocada", desc: "Livre (narrativa). Em cenário c/ dominância do elemento = Vant. Atq +1d12 Dano." },
+                    { name: "Ataque Elemental", desc: "Desarmado (Combate + For/Men/Alm). Dano 1d10 + Elem." },
+                    { name: "Impulso", desc: "Pode dar 2 Atq na rodada, mas descansa próx. Pode forçar 3º e rolar Corpo (passar adia exaustão, falhar cai)." }
+                ],
+                apice: { name: "Forma Brutal!", desc: "Desafio: Aprisionar/destruir com dom da dobra.\n\nUso: 1x/combate. Domina os 4 elementos. Ganha 4 dados extras. Ataca 2. Cai 1 dado por ataque." }
+            },
+            "Ilusório": { 
+                hp: 5, rf: 4, rm: 3, maestria: 5, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano +5 (Escala)." },
+                    { name: "Passos nas Sombras", desc: "Furtivo=Sem som, atravessa lotado. Escuridão=+4 Defesa." },
+                    { name: "Ataque Furtivo", desc: "Oculto causa +1d12+Des Dano, Ignora Res temporárias." },
+                    { name: "Mãos Leves", desc: "Enganação para furtar com Destreza." },
+                    { name: "Manto das Sombras", desc: "Salto=Move total. Queda anulada. Ficar furtivo é Ação Bônus." }
+                ],
+                apice: { name: "Um só com as Sombras", desc: "Desafio: Assassinar sem ver.\n\nUso: 1x/cena: Teleporte Furtivo 30m para sombra. Soma Des em R.A na sombra." }
+            },
+            "Lutador": { 
+                hp: 10, rf: 3, rm: 3, maestria: 5, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano +5 (Escala)." },
+                    { name: "Ritmo de Combate", desc: "Acertou entra em Ritmo. Próx ataque = Vantagem +1dano/acerto (Pilha!). Errou reseta tudo." },
+                    { name: "Combate de Rua", desc: "Vantagem usar itens do cenário (cadeiras/garrafas)." },
+                    { name: "Esquerda e Direita", desc: "Desarmado = 2d10+6. Superou Def em 5 = Atq extra imediato." },
+                    { name: "Peito de Aço", desc: "Passou <50% vida = +3 Def (r = Corpo). Ignora ferimento bruto." },
+                    { name: "Errou Otário!", desc: "Cercado = +1 Def. Erraram ataque em você = Ganha atq desarmado de reação." }
+                ],
+                apice: { name: "KNOCKOUT!", desc: "Desafio: Força lendária de perseverar.\n\nUso: 2x/combate. +3d8+For Dano Especial. Se Matar, cura 50% dano." }
+            },
+            "Mago": { 
+                hp: 5, rf: 2, rm: 10, maestria: 2, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano Mágico +2 (Escala)." },
+                    { name: "Aprendiz de Magias", desc: "Recebe 2 Runas Extras. Pode trocar sigilo 1x longo descanso." },
+                    { name: "Manipulação Arcana", desc: "2x/cena. +5 Teste/Dano." },
+                    { name: "O Implacável", desc: "Acertou Magia = próx ganha +2 de acerto (pilha +1 por apice)." },
+                    { name: "Amplificação", desc: "1x/cena. Pula turno e amplia = A magia da próx causa +1 Dado extra." },
+                    { name: "Contemplem o Mago", desc: "2x/cena. Rolagem Dupla (3,3)= Crítico." }
+                ],
+                apice: { name: "Ascensão Arcana", desc: "Desafio: Magia lendária conjurada.\n\nUso: 2x/cena. Solta 2 Magias de uma vez." }
+            },
+            "Mateiro": { 
+                hp: 6, rf: 4, rm: 4, maestria: 6, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano (Pet/Tu) +6 (Escala)." },
+                    { name: "Melhor Amigo", desc: "Companheiro animal (Felino/Urso/Aviário). Status base iguais ao Mateiro. Ataque=2d6+Atributo+2/apice. Dano=3d8+Mtr." },
+                    { name: "Especialização em Terreno", desc: "+2 perícias em 1 bioma (Floresta, etc)." },
+                    { name: "Olhar do Aventureiro", desc: "1x/cena. Analisa campo, acha falha ou vantagem." },
+                    { name: "Selo de Proteção", desc: "Pet Vida 0 fica em 1PV e protegido (3r)." }
+                ],
+                apice: { name: "Sempre Protegendo", desc: "Desafio: Salvar bioma ou fera sagrada.\n\nUso: Lutar no mesmo bloco de inimigo (lado-lado), ambos tem +4 Atq e Def." }
+            },
+            "Necromante": { 
+                hp: 5, rf: 2, rm: 7, maestria: 3, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano de Morte/Servo +3 (Escala)." },
+                    { name: "Levantem-se", desc: "Ergue 2 Servos por Descanso Curto." },
+                    { name: "A Não Vida", desc: "Servos não tem Vida, mas 'Energia Morta' (1d8 por Men/Alm). Só morrem se o dano for MAIOR que energia no mesmo golpe." },
+                    { name: "Comando (Ação Bônus)", desc: "Atacam com 5d4+Maestria ou fazem ação mundana de peso/bloqueio." },
+                    { name: "Defesa de Corpos", desc: "Perto de Servo = +2 Def. Pode sacrificar servo para levar 50% dano do Boss." }
+                ],
+                apice: { name: "Ressureição", desc: "Desafio: Desvendar alma da Trama.\n\nUso: Cair (Morte Iminente): Teste Alma 12 = Volta com 50% PV e +5 R.A." }
+            },
+            "Paladino": { 
+                hp: 10, rf: 8, rm: 6, maestria: 7, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Dano Divino/Cura +7 (Escala)." },
+                    { name: "Escolhido(a)", desc: "Bênçãos divinas da divindade tem vantagem." },
+                    { name: "Juramento & Essência", desc: "Convicção(Jamais recuar = Vant. Alma), Guardião(Proteger todos = +2 Def 2 aliados), Justiça(Fazer a Lei = Cura 4pv/rod)." },
+                    { name: "Golpe Divino (Ação Bônus)", desc: "3x/combate. Arma infusa = +3d6+Mtr (mágico/fís)." },
+                    { name: "A Resposta é FÉ", desc: "1x/cena falhar Res, Rola dnv com Devoção em Vant." }
+                ],
+                apice: { name: "Canalizar Divindade", desc: "Desafio: Impor o juramento pra salvar o mapa.\n\nUso: 1x/cena. Avatar: Demônios/Sombrios levam -5 pra acertar (3r)." }
+            },
+            "Poeta das Emoções": { 
+                hp: 3, rf: 3, rm: 3, maestria: 2, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Buff/Dano/Cura +2 (Escala)." },
+                    { name: "Canção", desc: "Instrumento é Runa (Lim = Carisma)." },
+                    { name: "Sinfonia", desc: "Buffa aliado em Emoção = +1d8 R.A/Res. Cena inteira." },
+                    { name: "Melodia", desc: "Toca leve = Cura 2d8 ou limpa Condição." },
+                    { name: "Quinta Sinfonia", desc: "2x/cena. Raio 5m Res. Inf (12). Hipnotiza (2r)." },
+                    { name: "Presença Cativante", desc: "Testes de Carisma recebem piso mínimo do Mestre." }
+                ],
+                apice: { name: "Concerto Malevolente", desc: "Desafio: Cativar legião/corte.\n\nUso: 1x/cena. D.A (10+Car). Falha=Paralisado(1r) e Dano 3d8. Aliados ganham +2." }
+            },
+            "Sacerdote": { 
+                hp: 8, rf: 3, rm: 6, maestria: 3, 
+                features: [
+                    { name: "Maestria (Base)", desc: "Cura/Magia +3 (Escala)." },
+                    { name: "Mãos Abençoadas (Ação Bônus)", desc: "Toca cura 1d12 (Lim = Mente) OU Dá +2 Buff (2r)." },
+                    { name: "Julgamento", desc: "3x/combate. Feixe de 4d12 Mágico (Seres Infernais levam 6d12)." },
+                    { name: "Medicina Divina", desc: "Vantagem em tirar da morte e aliviar toxinas." },
+                    { name: "Amuleto Sagrado", desc: "1x/cena. Molda item para aspecto do Deus = Bônus extra." }
+                ],
+                apice: { name: "Enviado Celeste", desc: "Desafio: Salvar do apocalipse da fé.\n\nUso: 1x/cena. Milagre Divino narrativo para salvar PT (Aprovação mestre)." }
+            }
+        };
+
+        // --- STATE MANAGEMENT ---
+        let profiles = [];
+        let activeProfileId = null;
+        let modalType = null;
+
+        function saveProfiles() {
+            localStorage.setItem('draemora_v5_data', JSON.stringify(profiles));
+            localStorage.setItem('draemora_v5_active_id', activeProfileId);
+        }
+
+        function createNewProfile() {
+            const id = "p_" + Date.now();
+            const newChar = {
+                id: id,
+                name: "Novo Herói",
+                race: "Astris",
+                class: "Aniquilador",
+                subclass: "",
+                subclassDesc: "",
+                hp: "", 
+                attrs: { for: 1, des: 1, cor: 1, men: 1, alm: 1, car: 1 },
+                skills: [],
+                talents: [], 
+                maculas: [],
+                apices: [false, false, false, false],
+                runes: [],
+                arsenal: [],
+                wallet: { dsb: 0, dsp: 0, dso: 0, dsd: 0 },
+                notes: "",
+                style: { theme: 'draemora', font: "'Quicksand', sans-serif", bg: "#0a192f", panel: "rgba(26, 26, 26, 0.9)" }
+            };
+            profiles.push(newChar);
+            activeProfileId = id;
+            saveProfiles();
+            renderProfileSelector();
+            loadProfile(id);
+        }
+
+        function switchProfile(id) {
+            activeProfileId = id;
+            saveProfiles();
+            loadProfile(id);
+        }
+
+        function loadProfile(id) {
+            const char = profiles.find(p => p.id === id);
+            if (!char) return;
+
+            // Migração: Converter Talentos e Máculas em Strings para Objetos Editáveis
+            if (char.talents && char.talents.length > 0 && typeof char.talents[0] === 'string') {
+                char.talents = char.talents.map(tStr => {
+                    let allOpts = [...(RAÇAS[char.race]?.talents || [])];
+                    if (char.race === 'Dampiros') allOpts = [...allOpts, ...(RAÇAS['Humano']?.talents || []), ...(RAÇAS['Vampiros']?.talents || [])];
+                    let found = allOpts.find(x => x.name === tStr);
+                    return { id: Date.now() + Math.random(), name: tStr, desc: found ? found.desc : "" };
+                });
+            }
+            if (char.maculas && char.maculas.length > 0 && typeof char.maculas[0] === 'string') {
+                char.maculas = char.maculas.map(mStr => {
+                    let allOpts = [...(RAÇAS[char.race]?.maculas || [])];
+                    if (char.race === 'Dampiros') allOpts = [...allOpts, ...(RAÇAS['Humano']?.maculas || []), ...(RAÇAS['Vampiros']?.maculas || [])];
+                    let found = allOpts.find(x => x.name === mStr);
+                    return { id: Date.now() + Math.random(), name: mStr, desc: found ? found.desc : "" };
+                });
+            }
+
+            if (document.getElementById('charName')) document.getElementById('charName').value = char.name;
+            if (document.getElementById('charRace')) document.getElementById('charRace').value = char.race;
+            if (document.getElementById('charClass')) document.getElementById('charClass').value = char.class;
+            if (document.getElementById('charSubclass')) document.getElementById('charSubclass').value = char.subclass || "";
+            if (document.getElementById('charSubclassDesc')) document.getElementById('charSubclassDesc').value = char.subclassDesc || "";
+            if (document.getElementById('charNotes')) document.getElementById('charNotes').value = char.notes || "";
+            if (document.getElementById('stat-hp')) document.getElementById('stat-hp').value = char.hp || "";
+            
+            for (let k in char.attrs) {
+                const el = document.getElementById(`attr-${k}`);
+                if (el) el.value = char.attrs[k];
+            }
+
+            if (char.wallet) {
+                if (document.getElementById('coin-dsb')) document.getElementById('coin-dsb').value = char.wallet.dsb || 0;
+                if (document.getElementById('coin-dsp')) document.getElementById('coin-dsp').value = char.wallet.dsp || 0;
+                if (document.getElementById('coin-dso')) document.getElementById('coin-dso').value = char.wallet.dso || 0;
+                if (document.getElementById('coin-dsd')) document.getElementById('coin-dsd').value = char.wallet.dsd || 0;
+            }
+            
+            applyStyleToUI(char.style);
+            updateCharacter();
+        }
+
+        function updateCharacter() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (!char) return;
+
+            char.race = document.getElementById('charRace')?.value || char.race;
+            char.class = document.getElementById('charClass')?.value || char.class;
+
+            const rData = RAÇAS[char.race] || RAÇAS["Astris"];
+            const cData = CLASSES[char.class] || CLASSES["Aniquilador"];
+
+            // Cálculo de Equipamentos (Escudos e Armaduras)
+            let equipDef = 0;
+            let equipRF = 0;
+            let equipRM = 0;
+
+            (char.arsenal || []).forEach(item => {
+                if (item.equipped) {
+                    if (item.type === 'armor') {
+                        equipDef += (item.armorType === 'leve' ? 2 : 5);
+                    } else if (item.type === 'shield') {
+                        let val = (item.shieldType === 'pequeno' ? 2 : 5);
+                        if (item.resistType === 'rf') equipRF += val;
+                        else equipRM += val;
+                    }
+                }
+            });
+
+            const finalDef = rData.def + equipDef;
+            const finalRF = rData.rf + cData.rf + equipRF;
+            const finalRM = rData.rm + cData.rm + equipRM;
+
+            if (document.getElementById('stat-def')) document.getElementById('stat-def').innerText = finalDef;
+            if (document.getElementById('stat-rf')) document.getElementById('stat-rf').innerText = finalRF;
+            if (document.getElementById('stat-rm')) document.getElementById('stat-rm').innerText = finalRM;
+
+            renderList('class-features', cData.features, 'border-gold');
+            renderApice(char);
+            renderList('race-features', rData.traits, 'border-blue-500');
+            renderStars(char);
+            renderArsenal(char);
+            renderRunes(char);
+            renderSkills(char);
+
+            renderSelectedOptions('talent-list', char.talents, 'border-gold', 'talent');
+            renderSelectedOptions('macula-list', char.maculas, 'border-red-500', 'macula');
+            
+            const tCount = document.getElementById('talent-count');
+            const mCount = document.getElementById('macula-count');
+            
+            if (tCount) tCount.innerText = char.talents.length;
+            if (mCount) mCount.innerText = char.maculas.length;
+
+            saveProfiles();
+        }
+
+        // --- UI RENDERING ---
+        function renderList(id, items, bColor) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = items.map(i => `
+                <div class="border-l-4 ${bColor} bg-black bg-opacity-20 p-3 rounded">
+                    <div class="font-bold text-xs uppercase text-gold">${i.name}</div>
+                    <div class="desc-text">${i.desc}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderApice(char) {
+            const cData = CLASSES[char.class];
+            const el = document.getElementById('class-apice');
+            if (!el || !cData || !cData.apice) return;
+            el.innerHTML = `
+                <div class="border-l-4 border-purple-500 bg-black bg-opacity-20 p-3 rounded shadow-lg">
+                    <div class="font-bold text-sm uppercase text-purple-400 mb-1"><i class="fa-solid fa-crown mr-1"></i> ${cData.apice.name}</div>
+                    <div class="desc-text text-gray-300">${cData.apice.desc}</div>
+                </div>
+            `;
+        }
+
+        function renderSelectedOptions(id, items, bColor, type) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerHTML = items.map(item => `
+                <div class="border-l-4 ${bColor} bg-black bg-opacity-20 p-3 rounded relative group">
+                    <button onclick="removeOption('${type}', ${item.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition z-10"><i class="fa-solid fa-trash"></i></button>
+                    <input type="text" value="${item.name}" oninput="editOption('${type}', ${item.id}, 'name', this.value)" class="bg-transparent font-bold text-sm text-gray-200 mb-1 w-[90%] outline-none focus:text-gold relative z-0">
+                    <textarea oninput="editOption('${type}', ${item.id}, 'desc', this.value)" class="bg-transparent desc-text text-xs text-gray-400 w-full resize-none h-16 outline-none focus:text-gray-200">${item.desc}</textarea>
+                </div>
+            `).join('') || `<div class="text-center opacity-30 py-4 text-[10px] uppercase tracking-widest">Nenhum Selecionado</div>`;
+        }
+
+        function editOption(type, id, field, value) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const list = type === 'talent' ? char.talents : char.maculas;
+            const item = list.find(x => x.id === id);
+            if (item) item[field] = value;
+            saveProfiles();
+        }
+
+        function renderStars(char) {
+            const container = document.getElementById('apex-stars');
+            if (!container) return;
+            container.innerHTML = (char.apices || [false,false,false,false]).map((a, i) => `
+                <i class="fa-solid fa-star ${a ? 'star-active' : 'star-inactive'} transition" onclick="toggleApex(${i})"></i>
+            `).join('');
+        }
+
+        function renderArsenal(char) {
+            const list = document.getElementById('arsenal-list');
+            if (!list) return;
+            list.innerHTML = (char.arsenal || []).map(item => {
+                if (item.type === 'shield') {
+                    return `
+                    <div class="p-4 bg-black bg-opacity-30 rounded border border-blue-500 border-opacity-30 group relative">
+                        <button onclick="deleteArsenalItem(${item.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
+                        <div class="flex justify-between items-center mb-2 pr-6">
+                            <input type="text" value="${item.name}" oninput="editItem(${item.id}, 'name', this.value)" class="bg-transparent font-bold text-blue-400 outline-none w-full" placeholder="Nome do Escudo">
+                            <label class="flex items-center gap-1 text-xs cursor-pointer ml-2"><input type="checkbox" ${item.equipped ? 'checked' : ''} onchange="editItem(${item.id}, 'equipped', this.checked); updateCharacter();" class="accent-gold"> Equipar</label>
+                        </div>
+                        <div class="flex gap-2 text-xs">
+                            <select onchange="editItem(${item.id}, 'shieldType', this.value); updateCharacter();" class="bg-black bg-opacity-50 border border-gray-700 rounded p-1 flex-grow outline-none text-gray-300">
+                                <option value="pequeno" ${item.shieldType==='pequeno'?'selected':''}>Escudo Pequeno (+2)</option>
+                                <option value="grande" ${item.shieldType==='grande'?'selected':''}>Escudo Grande (+5)</option>
+                            </select>
+                            <select onchange="editItem(${item.id}, 'resistType', this.value); updateCharacter();" class="bg-black bg-opacity-50 border border-gray-700 rounded p-1 flex-grow outline-none text-gray-300">
+                                <option value="rf" ${item.resistType==='rf'?'selected':''}>Res. Física</option>
+                                <option value="rm" ${item.resistType==='rm'?'selected':''}>Res. Mágica</option>
+                            </select>
+                        </div>
+                    </div>`;
+                } else if (item.type === 'armor') {
+                    return `
+                    <div class="p-4 bg-black bg-opacity-30 rounded border border-green-500 border-opacity-30 group relative">
+                        <button onclick="deleteArsenalItem(${item.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
+                        <div class="flex justify-between items-center mb-2 pr-6">
+                            <input type="text" value="${item.name}" oninput="editItem(${item.id}, 'name', this.value)" class="bg-transparent font-bold text-green-400 outline-none w-full" placeholder="Nome da Armadura">
+                            <label class="flex items-center gap-1 text-xs cursor-pointer ml-2"><input type="checkbox" ${item.equipped ? 'checked' : ''} onchange="editItem(${item.id}, 'equipped', this.checked); updateCharacter();" class="accent-gold"> Equipar</label>
+                        </div>
+                        <div class="flex gap-2 text-xs">
+                            <select onchange="editItem(${item.id}, 'armorType', this.value); updateCharacter();" class="bg-black bg-opacity-50 border border-gray-700 rounded p-1 w-full outline-none text-gray-300">
+                                <option value="leve" ${item.armorType==='leve'?'selected':''}>Armadura Leve (+2 Def)</option>
+                                <option value="pesada" ${item.armorType==='pesada'?'selected':''}>Armadura Pesada (+5 Def)</option>
+                            </select>
+                        </div>
+                    </div>`;
+                } else {
+                    return `
+                    <div class="p-4 bg-black bg-opacity-30 rounded border border-white border-opacity-10 group relative">
+                        <button onclick="deleteArsenalItem(${item.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-trash"></i></button>
+                        <input type="text" value="${item.name}" oninput="editItem(${item.id}, 'name', this.value)" class="bg-transparent border-b border-gray-700 w-full mb-2 font-bold text-gold outline-none">
+                        <textarea oninput="editItem(${item.id}, 'desc', this.value)" class="bg-transparent w-full text-xs h-12 outline-none resize-none opacity-80" placeholder="Propriedades do item...">${item.desc}</textarea>
+                    </div>`;
+                }
+            }).join('') || `<div class="text-center opacity-30 py-8">Arsenal Vazio</div>`;
+        }
+
+        function renderRunes(char) {
+            const list = document.getElementById('runes-list');
+            if (!list) return;
+            list.innerHTML = (char.runes || []).map(r => `
+                <div class="p-3 bg-black bg-opacity-30 rounded border border-purple-500 border-opacity-30 group relative flex gap-3 items-center">
+                    <button onclick="deleteRune(${r.id})" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 transition z-10"><i class="fa-solid fa-trash"></i></button>
+                    <div class="flex-grow grid grid-cols-2 gap-3 pr-4">
+                        <div>
+                            <label class="text-[10px] uppercase font-bold text-blue-300">Elemento</label>
+                            <input type="text" value="${r.element || ''}" oninput="editRune(${r.id}, 'element', this.value)" class="bg-transparent border-b border-gray-600 w-full text-sm outline-none text-white focus:border-gold">
+                        </div>
+                        <div>
+                            <label class="text-[10px] uppercase font-bold text-purple-300">Sigilo</label>
+                            <input type="text" value="${r.sigil || ''}" oninput="editRune(${r.id}, 'sigil', this.value)" class="bg-transparent border-b border-gray-600 w-full text-sm outline-none text-white focus:border-gold">
+                        </div>
+                        <div class="col-span-2 flex items-center gap-3">
+                            <label class="text-[10px] uppercase font-bold text-red-400">Instabilidade</label>
+                            <input type="number" value="${r.instability || 0}" oninput="editRune(${r.id}, 'instability', this.value)" class="bg-transparent border-b border-gray-600 w-16 text-center text-sm font-bold text-red-300 outline-none focus:border-gold">
+                        </div>
+                    </div>
+                </div>
+            `).join('') || `<div class="text-center opacity-30 py-6 text-sm">Nenhuma Runa Equipada</div>`;
+        }
+
+        function renderSkills(char) {
+            const container = document.getElementById('skills-list');
+            if (!container) return;
+            container.innerHTML = (char.skills || []).map(s => `
+                <div class="flex items-center gap-2 group">
+                    <input type="text" value="${s.name}" oninput="updateSkill(${s.id}, 'name', this.value)" 
+                           class="input-field py-1 text-sm flex-grow bg-opacity-40" placeholder="Nome da Perícia">
+                    <input type="number" value="${s.value}" onchange="updateSkill(${s.id}, 'value', this.value)" 
+                           class="input-field py-1 text-sm w-16 text-center bg-opacity-40 font-bold border-gray-600 focus:border-gold" placeholder="Val" min="0">
+                    <button onclick="deleteSkill(${s.id})" class="text-red-500 opacity-0 group-hover:opacity-100 transition px-2">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `).join('') || `<div class="text-center opacity-20 py-4 text-[10px] uppercase">Nenhuma Perícia</div>`;
+        }
+
+        // --- MODAL LOGIC ---
+        function openModal(type) {
+            modalType = type;
+            const char = profiles.find(p => p.id === activeProfileId);
+            const rData = RAÇAS[char.race];
+            
+            let opts = type === 'talent' ? rData.talents : rData.maculas;
+            
+            if (char.race === 'Dampiros') {
+                const extraOpts1 = type === 'talent' ? RAÇAS['Humano'].talents : RAÇAS['Humano'].maculas;
+                const extraOpts2 = type === 'talent' ? RAÇAS['Vampiros'].talents : RAÇAS['Vampiros'].maculas;
+                opts = [...opts, ...extraOpts1, ...extraOpts2];
+            }
+
+            const selectedList = type === 'talent' ? char.talents : char.maculas;
+            const modalContent = document.getElementById('modal-content');
+            document.getElementById('modal-title').innerText = type === 'talent' ? 'Adicionar Talento' : 'Adicionar Mácula';
+
+            let html = `
+                <button onclick="addCustomOption()" class="w-full bg-gray-800 hover:bg-gray-700 text-gold font-bold py-2 px-4 rounded border border-gray-600 mb-4 uppercase text-xs transition">
+                    <i class="fa-solid fa-plus mr-2"></i> Criar Personalizado
+                </button>
+            `;
+
+            html += opts.map(o => {
+                const isSel = selectedList.some(x => x.name === o.name);
+                return `
+                    <div class="flex items-start gap-3 p-4 bg-black bg-opacity-60 rounded border ${isSel ? 'border-gold' : 'border-white border-opacity-10'} hover:border-gold transition cursor-pointer mb-2" onclick="toggleModalOption('${o.name.replace(/'/g, "\\'")}')">
+                        <input type="checkbox" ${isSel ? 'checked' : ''} class="mt-1 accent-gold pointer-events-none">
+                        <div>
+                            <div class="text-sm font-bold ${isSel ? 'text-gold' : 'text-gray-200'}">${o.name}</div>
+                            <div class="desc-text text-xs text-gray-400 mt-1">${o.desc}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            modalContent.innerHTML = html;
+            document.getElementById('selection-modal').classList.remove('hidden');
+        }
+
+        function addCustomOption() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const list = modalType === 'talent' ? char.talents : char.maculas;
+            list.push({ id: Date.now() + Math.random(), name: "Novo Personalizado", desc: "Escreva a descrição aqui..." });
+            saveProfiles();
+            updateCharacter();
+            closeModal();
+        }
+
+        function toggleModalOption(name) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const list = modalType === 'talent' ? char.talents : char.maculas;
+            
+            const idx = list.findIndex(x => x.name === name);
+            if (idx > -1) {
+                list.splice(idx, 1);
+            } else {
+                let opts = modalType === 'talent' ? RAÇAS[char.race].talents : RAÇAS[char.race].maculas;
+                if (char.race === 'Dampiros') {
+                    const extra1 = modalType === 'talent' ? RAÇAS['Humano'].talents : RAÇAS['Humano'].maculas;
+                    const extra2 = modalType === 'talent' ? RAÇAS['Vampiros'].talents : RAÇAS['Vampiros'].maculas;
+                    opts = [...opts, ...extra1, ...extra2];
+                }
+                const preset = opts.find(o => o.name === name);
+                list.push({ id: Date.now() + Math.random(), name: preset.name, desc: preset.desc });
+            }
+            saveProfiles();
+            updateCharacter();
+            openModal(modalType); 
+        }
+
+        function closeModal() {
+            document.getElementById('selection-modal').classList.add('hidden');
+        }
+
+        function removeOption(type, id) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const list = type === 'talent' ? char.talents : char.maculas;
+            const idx = list.findIndex(x => x.id === id);
+            if (idx > -1) list.splice(idx, 1);
+            saveProfiles();
+            updateCharacter();
+        }
+
+        // --- DELETE MODAL ---
+        function openDeleteModal() {
+            if (profiles.length <= 1) {
+                alert("Você não pode apagar o único herói da sua lista.");
+                return;
+            }
+            const char = profiles.find(p => p.id === activeProfileId);
+            document.getElementById('delete-char-name').innerText = char.name;
+            document.getElementById('delete-confirm-input').value = '';
+            document.getElementById('delete-error').classList.add('hidden');
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const inputVal = document.getElementById('delete-confirm-input').value;
+            
+            if (inputVal === char.name) {
+                profiles = profiles.filter(p => p.id !== activeProfileId);
+                activeProfileId = profiles[0].id;
+                saveProfiles(); 
+                renderProfileSelector(); 
+                loadProfile(activeProfileId);
+                closeDeleteModal();
+            } else {
+                document.getElementById('delete-error').classList.remove('hidden');
+            }
+        }
+
+        // --- PDF EXPORT ---
+        function exportToPDF() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if(!char) return;
+
+            const btn = document.getElementById('btn-export-pdf');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Gerando...';
+
+            const rData = RAÇAS[char.race] || RAÇAS["Astris"];
+            const cData = CLASSES[char.class] || CLASSES["Aniquilador"];
+
+            let equipDef = 0, equipRF = 0, equipRM = 0;
+            (char.arsenal || []).forEach(item => {
+                if (item.equipped) {
+                    if (item.type === 'armor') equipDef += (item.armorType === 'leve' ? 2 : 5);
+                    else if (item.type === 'shield') {
+                        let val = (item.shieldType === 'pequeno' ? 2 : 5);
+                        if (item.resistType === 'rf') equipRF += val; else equipRM += val;
+                    }
+                }
+            });
+
+            const def = rData.def + equipDef;
+            const rf = rData.rf + cData.rf + equipRF;
+            const rm = rData.rm + cData.rm + equipRM;
+
+            const pdfHtml = `
+                <div class="p-8 bg-white text-black w-[800px] font-sans" style="font-family: Arial, sans-serif;">
+                    <div class="border-4 border-black p-4 mb-4 text-center uppercase tracking-widest relative">
+                        <h1 class="text-3xl font-bold">Draemora 4.0</h1>
+                        <h2 class="text-sm tracking-[0.5em] mt-1">Ficha de Personagem</h2>
+                        <div class="absolute right-4 top-4 text-right">
+                            <div class="text-[10px] font-bold">ESTÁGIO</div>
+                            <div class="text-xl font-bold">${char.apices.filter(a => a).length}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-12 gap-2 mb-4">
+                        <div class="col-span-6 border-2 border-black p-2">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Nome</span>
+                            <span class="text-lg font-bold uppercase">${char.name}</span>
+                        </div>
+                        <div class="col-span-3 border-2 border-black p-2">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Raça</span>
+                            <span class="text-sm font-bold uppercase">${char.race}</span>
+                        </div>
+                        <div class="col-span-3 border-2 border-black p-2">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Classe</span>
+                            <span class="text-sm font-bold uppercase">${char.class}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-2 mb-4">
+                        <div class="col-span-4 border-2 border-black p-2">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Subclasse</span>
+                            <span class="text-sm font-bold uppercase block">${char.subclass || 'Nenhuma'}</span>
+                            <span class="text-[10px] text-gray-500 block mt-1 leading-tight">${char.subclassDesc || ''}</span>
+                        </div>
+                        <div class="col-span-2 border-2 border-black p-2 text-center bg-gray-100">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Vida</span>
+                            <span class="text-xl font-bold">${char.hp || '0/0'}</span>
+                        </div>
+                        <div class="col-span-2 border-2 border-black p-2 text-center bg-gray-100">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">Defesa</span>
+                            <span class="text-xl font-bold">${def}</span>
+                        </div>
+                        <div class="col-span-2 border-2 border-black p-2 text-center bg-gray-100">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">R. Física</span>
+                            <span class="text-xl font-bold">${rf}</span>
+                        </div>
+                        <div class="col-span-2 border-2 border-black p-2 text-center bg-gray-100">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">R. Mágica</span>
+                            <span class="text-xl font-bold">${rm}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-6 gap-2 mb-4 text-center">
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">FOR</span>
+                            <span class="text-lg font-bold">${char.attrs.for}</span>
+                        </div>
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">DES</span>
+                            <span class="text-lg font-bold">${char.attrs.des}</span>
+                        </div>
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">COR</span>
+                            <span class="text-lg font-bold">${char.attrs.cor}</span>
+                        </div>
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">MEN</span>
+                            <span class="text-lg font-bold">${char.attrs.men}</span>
+                        </div>
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">ALM</span>
+                            <span class="text-lg font-bold">${char.attrs.alm}</span>
+                        </div>
+                        <div class="border-2 border-black p-2 rounded-full shadow-sm">
+                            <span class="font-bold text-[10px] uppercase block text-gray-600">CAR</span>
+                            <span class="text-lg font-bold">${char.attrs.car}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4" style="page-break-inside: avoid;">
+                        <!-- Talentos e Máculas -->
+                        <div>
+                            <div class="border-2 border-black mb-4">
+                                <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Talentos</h3>
+                                <div class="p-2 text-xs overflow-hidden" style="min-height: 150px;">
+                                    ${char.talents.map(t => `<div class="border-b border-gray-300 py-1"><span class="font-bold">• ${t.name}</span><br><span class="text-[10px] text-gray-600 block pl-2">${t.desc}</span></div>`).join('') || '<div class="text-gray-400 italic text-center mt-2">Nenhum</div>'}
+                                </div>
+                            </div>
+                            <div class="border-2 border-black mb-4">
+                                <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Máculas</h3>
+                                <div class="p-2 text-xs overflow-hidden" style="min-height: 100px;">
+                                    ${char.maculas.map(m => `<div class="border-b border-gray-300 py-1"><span class="font-bold">• ${m.name}</span><br><span class="text-[10px] text-gray-600 block pl-2">${m.desc}</span></div>`).join('') || '<div class="text-gray-400 italic text-center mt-2">Nenhuma</div>'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Perícias -->
+                        <div class="border-2 border-black mb-4">
+                            <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Perícias</h3>
+                            <div class="p-4 text-xs h-[300px] overflow-hidden columns-2 gap-6">
+                                ${char.skills.map(s => `<div class="flex justify-between border-b border-black py-1 mb-1"><span>${s.name}</span><span class="font-bold border border-black rounded px-2">${s.value}</span></div>`).join('') || '<div class="text-gray-400 italic text-center mt-2">Nenhuma</div>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="page-break-inside: avoid;">
+                        <div class="border-2 border-black mb-4">
+                            <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Arsenal & Runas</h3>
+                            <div class="p-4 text-xs grid grid-cols-2 gap-6 min-h-[150px]">
+                                <div>
+                                    <h4 class="font-bold underline mb-2 text-sm">Itens e Equipamentos</h4>
+                                    ${char.arsenal.map(i => {
+                                        if(i.type === 'shield') {
+                                            let text = i.shieldType === 'pequeno' ? 'Escudo Pequeno (+2)' : 'Escudo Grande (+5)';
+                                            let res = i.resistType === 'rf' ? 'Res. Física' : 'Res. Mágica';
+                                            return `<div class="mb-2 pb-2 border-b border-gray-300"><span class="font-bold text-[13px]">${i.name} ${i.equipped ? '(Equipado)' : ''}</span><br><span class="text-gray-700">${text} - ${res}</span></div>`;
+                                        } else if (i.type === 'armor') {
+                                            let text = i.armorType === 'leve' ? 'Armadura Leve (+2 Def)' : 'Armadura Pesada (+5 Def)';
+                                            return `<div class="mb-2 pb-2 border-b border-gray-300"><span class="font-bold text-[13px]">${i.name} ${i.equipped ? '(Equipada)' : ''}</span><br><span class="text-gray-700">${text}</span></div>`;
+                                        } else {
+                                            return `<div class="mb-2 pb-2 border-b border-gray-300"><span class="font-bold text-[13px]">${i.name}</span><br><span class="text-gray-700">${i.desc}</span></div>`;
+                                        }
+                                    }).join('') || '<div class="text-gray-400 italic mt-2">Vazio</div>'}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold underline mb-2 text-sm">Runas Equipadas</h4>
+                                    ${char.runes.map(r => `<div class="mb-2 pb-2 border-b border-gray-300"><span class="font-bold text-[13px]">${r.element} (${r.sigil})</span><br><span class="text-gray-700">Instabilidade: ${r.instability}</span></div>`).join('') || '<div class="text-gray-400 italic mt-2">Nenhuma</div>'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-12 gap-4" style="page-break-inside: avoid;">
+                        <div class="col-span-8 border-2 border-black">
+                            <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Anotações e História</h3>
+                            <div class="p-3 text-xs whitespace-pre-wrap leading-relaxed min-h-[150px]">${char.notes}</div>
+                        </div>
+                        <div class="col-span-4 border-2 border-black">
+                            <h3 class="bg-black text-white p-1 text-center text-xs font-bold uppercase tracking-widest">Bolsa de Dracmas</h3>
+                            <div class="p-3 text-sm space-y-3">
+                                <div class="flex justify-between border-b-2 border-gray-400 pb-1"><span class="font-bold text-gray-700">D. Ouro (D$O)</span><span class="font-bold text-lg">${char.wallet.dso || 0}</span></div>
+                                <div class="flex justify-between border-b-2 border-gray-400 pb-1"><span class="font-bold text-gray-700">D. Prata (D$P)</span><span class="font-bold text-lg">${char.wallet.dsp || 0}</span></div>
+                                <div class="flex justify-between border-b-2 border-gray-400 pb-1"><span class="font-bold text-gray-700">D. Bronze (D$B)</span><span class="font-bold text-lg">${char.wallet.dsb || 0}</span></div>
+                                <div class="flex justify-between border-b-2 border-gray-400 pb-1"><span class="font-bold text-gray-700">D. Diamante (D$D)</span><span class="font-bold text-lg">${char.wallet.dsd || 0}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const container = document.createElement('div');
+            container.innerHTML = pdfHtml;
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            document.body.appendChild(container);
+
+            html2pdf().set({
+                margin: 10,
+                filename: `${char.name.replace(/[^a-z0-9]/gi, '_')}_Ficha.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(container).save().then(() => {
+                document.body.removeChild(container);
+                btn.innerHTML = originalText;
+            });
+        }
+
+        // --- LOGIC ---
+        function addSkill() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (!char.skills) char.skills = [];
+            char.skills.push({ id: Date.now(), name: "Nova Perícia", value: 1 });
+            updateCharacter();
+        }
+
+        function deleteSkill(id) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            char.skills = char.skills.filter(s => s.id !== id);
+            updateCharacter();
+        }
+
+        function updateSkill(id, field, val) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const skill = char.skills.find(s => s.id === id);
+            if (skill) skill[field] = field === 'value' ? parseInt(val) || 0 : val;
+            saveProfiles();
+        }
+
+        function toggleApex(i) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            char.apices[i] = !char.apices[i];
+            updateCharacter();
+        }
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            if (document.getElementById('content-' + tab)) document.getElementById('content-' + tab).classList.remove('hidden');
+            if (document.getElementById('tab-' + tab)) document.getElementById('tab-' + tab).classList.add('active');
+        }
+
+        function addArsenalItem(type) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (!char.arsenal) char.arsenal = [];
+            
+            if (type === 'shield') {
+                char.arsenal.push({ id: Date.now(), type: 'shield', name: "Novo Escudo", shieldType: 'pequeno', resistType: 'rf', equipped: false });
+            } else if (type === 'armor') {
+                char.arsenal.push({ id: Date.now(), type: 'armor', name: "Nova Armadura", armorType: 'leve', equipped: false });
+            } else {
+                char.arsenal.push({ id: Date.now(), type: 'item', name: "Novo Item", desc: "" });
+            }
+            
+            updateCharacter();
+        }
+
+        function deleteArsenalItem(id) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            char.arsenal = char.arsenal.filter(i => i.id !== id);
+            updateCharacter();
+        }
+
+        function editItem(id, field, val) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const item = char.arsenal?.find(i => i.id === id);
+            if (item) item[field] = val;
+            saveProfiles();
+        }
+
+        function addRune() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (!char.runes) char.runes = [];
+            char.runes.push({ id: Date.now(), element: "Novo Elemento", sigil: "Novo Sigilo", instability: 0 });
+            updateCharacter();
+        }
+
+        function deleteRune(id) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            char.runes = char.runes.filter(r => r.id !== id);
+            updateCharacter();
+        }
+
+        function editRune(id, field, val) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            const rune = char.runes?.find(r => r.id === id);
+            if (rune) {
+                rune[field] = field === 'instability' ? parseInt(val) || 0 : val;
+            }
+            saveProfiles();
+        }
+
+        function saveData() {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (!char) return;
+            for (let k in char.attrs) {
+                const el = document.getElementById(`attr-${k}`);
+                if (el) char.attrs[k] = parseInt(el.value) || 1;
+            }
+            if (document.getElementById('charNotes')) char.notes = document.getElementById('charNotes').value;
+            if (document.getElementById('charSubclass')) char.subclass = document.getElementById('charSubclass').value;
+            if (document.getElementById('charSubclassDesc')) char.subclassDesc = document.getElementById('charSubclassDesc').value;
+            if (document.getElementById('stat-hp')) char.hp = document.getElementById('stat-hp').value;
+
+            char.wallet = {
+                dsb: parseInt(document.getElementById('coin-dsb')?.value) || 0,
+                dsp: parseInt(document.getElementById('coin-dsp')?.value) || 0,
+                dso: parseInt(document.getElementById('coin-dso')?.value) || 0,
+                dsd: parseInt(document.getElementById('coin-dsd')?.value) || 0
+            };
+
+            saveProfiles();
+        }
+
+        function updateProfileName(n) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (char) { char.name = n; renderProfileSelector(); saveProfiles(); }
+        }
+
+        // --- PERSONALIZAÇÃO ENGINE ---
+        function updateStyle(prop, val) {
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (char) {
+                char.style[prop] = val;
+                applyStyleToUI(char.style);
+                saveProfiles();
+            }
+        }
+
+        function applyTheme(type) {
+            const styles = {
+                dark: { bg: "#0f0f0f", panel: "rgba(26, 26, 26, 0.9)", font: "'Quicksand', sans-serif", theme: 'dark' },
+                white: { bg: "#f0f0f0", panel: "rgba(255, 255, 255, 0.95)", font: "'Roboto', sans-serif", theme: 'white' },
+                draemora: { bg: "#0a192f", panel: "rgba(26, 26, 26, 0.85)", font: "'Cinzel', serif", theme: 'draemora' }
+            };
+            const char = profiles.find(p => p.id === activeProfileId);
+            if (char) {
+                char.style = { ...char.style, ...styles[type] };
+                applyStyleToUI(char.style);
+                saveProfiles();
+            }
+        }
+
+        function applyStyleToUI(s) {
+            const body = document.getElementById('app-body');
+            if (!body) return;
+            body.style.backgroundColor = s.bg;
+            body.style.fontFamily = s.font;
+            body.style.color = s.theme === 'white' ? '#1a1a1a' : '#e0e0e0';
+            
+            if (s.theme === 'draemora') body.classList.add('draemora-stars');
+            else body.classList.remove('draemora-stars');
+
+            document.documentElement.style.setProperty('--panel-bg', s.panel);
+            
+            if (document.getElementById('style-font')) document.getElementById('style-font').value = s.font;
+            if (document.getElementById('style-bg')) document.getElementById('style-bg').value = s.bg;
+            if (document.getElementById('style-panel')) document.getElementById('style-panel').value = s.panel.includes('rgba') ? '#1a1a1a' : s.panel;
+            if (document.getElementById('bg-hex')) document.getElementById('bg-hex').innerText = s.bg;
+            if (document.getElementById('panel-hex')) document.getElementById('panel-hex').innerText = s.panel;
+        }
+
+        function renderProfileSelector() {
+            const sel = document.getElementById('profileSelector');
+            if (!sel) return;
+            sel.innerHTML = "";
+            profiles.forEach(p => sel.add(new Option(p.name || "Herói", p.id, false, p.id === activeProfileId)));
+        }
+
+        function init() {
+            const rSel = document.getElementById('charRace');
+            const cSel = document.getElementById('charClass');
+            if (rSel) Object.keys(RAÇAS).sort().forEach(r => rSel.add(new Option(r, r)));
+            if (cSel) Object.keys(CLASSES).sort().forEach(c => cSel.add(new Option(c, c)));
+
+            const saved = localStorage.getItem('draemora_v5_data');
+            const last = localStorage.getItem('draemora_v5_active_id');
+            if (saved) {
+                profiles = JSON.parse(saved);
+                activeProfileId = last || (profiles.length > 0 ? profiles[0].id : null);
+                if (activeProfileId) {
+                    renderProfileSelector();
+                    loadProfile(activeProfileId);
+                } else createNewProfile();
+            } else createNewProfile();
+        }
+
+        init();
+    </script>
+</body>
+</html>
